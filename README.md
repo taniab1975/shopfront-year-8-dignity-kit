@@ -1,8 +1,10 @@
-# $100 Human Dignity Kit Proposal
+# $100 Human Dignity Kit Builder
 
-A teacher-facing proposal app for the Year 8 Shopfront `$100 Human Dignity Kit Challenge`.
+An interactive teacher-facing proposal app for the Year 8 Shopfront `$100 Human Dignity Kit Challenge`.
 
-The app is designed as a staff pitch dossier. It shows how one authentic project can support curriculum delivery and assessment across:
+The app lets teachers build and adjust a sample dignity kit, see the $100 budget evidence live, connect decisions to curriculum codes, track assessment evidence and generate a staff-ready proposal summary.
+
+It shows how one authentic project can support curriculum delivery and assessment across:
 
 - Mathematics
 - HASS Economics
@@ -12,11 +14,13 @@ The app is designed as a staff pitch dossier. It shows how one authentic project
 
 ## What It Includes
 
-- A staff-facing project overview
+- A live $100 kit builder with item quantities and category allocations
+- Local item entry for school-specific or Shopfront-specific additions
+- Editable need, Science test, dignity and pitch notes
+- A generated staff proposal summary
 - Five disciplinary lenses: Value, Choice, Evidence, Voice and Dignity
 - A filterable curriculum legitimacy matrix
 - Explicit teaching and transfer cues for each subject
-- A physical puzzle-board clue system
 - A shared assessment portfolio model
 - A simple marking scale for subject teachers
 - A print-friendly pitch pack layout

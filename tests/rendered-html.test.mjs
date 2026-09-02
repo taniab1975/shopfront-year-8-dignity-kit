@@ -28,18 +28,19 @@ async function render() {
   );
 }
 
-test("server-renders the Human Dignity Kit proposal app", async () => {
+test("server-renders the Human Dignity Kit builder app", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>\$100 Human Dignity Kit Proposal<\/title>/i);
+  assert.match(html, /<title>\$100 Human Dignity Kit Builder<\/title>/i);
   assert.match(html, /The \$100 Human Dignity Kit Challenge/);
-  assert.match(html, /Teacher pitch dossier/i);
-  assert.match(html, /Curriculum legitimacy matrix/);
-  assert.match(html, /Dignity Kit Puzzle Board/);
-  assert.match(html, /One portfolio, separate legitimate assessment evidence/);
+  assert.match(html, /Build the kit/);
+  assert.match(html, /Live budget/);
+  assert.match(html, /Decision evidence/);
+  assert.match(html, /Curriculum engine/);
+  assert.match(html, /Generated proposal/);
   assert.match(html, /MA-CN-001/);
   assert.match(html, /HS-EB-001/);
   assert.match(html, /SC-QP-001/);

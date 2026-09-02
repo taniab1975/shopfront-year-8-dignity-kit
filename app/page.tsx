@@ -1,401 +1,428 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+type Category = "Hygiene" | "Health" | "Comfort" | "Food" | "Connection";
 type Status = "Directly assessed" | "Applied or practised" | "Context only";
+
+type KitItem = {
+  id: string;
+  name: string;
+  category: Category;
+  price: number;
+  defaultQty: number;
+  purpose: string;
+  evidenceCue: string;
+};
+
+type Notes = {
+  need: string;
+  science: string;
+  dignity: string;
+  pitch: string;
+};
 
 type Lens = {
   id: string;
   subject: string;
   token: string;
-  signal: string;
-  question: string;
-  claim: string;
+  prompt: string;
   explicitTeaching: string[];
-  transferPrompts: string[];
-  evidence: string;
-  assessed: string[];
-  practised: string[];
+  studentEvidence: string[];
+  codes: string[];
 };
 
 type CurriculumRow = {
   subject: string;
-  area: string;
   code: string;
-  descriptor: string;
+  area: string;
   teach: string;
   trigger: string;
   evidence: string;
   status: Status;
 };
 
+const STORAGE_KEY = "shopfront-dignity-kit-builder-v1";
+const BUDGET = 100;
+
+const categories: Category[] = ["Hygiene", "Health", "Comfort", "Food", "Connection"];
+
+const starterItems: KitItem[] = [
+  {
+    id: "tooth-care",
+    name: "Toothbrush and toothpaste",
+    category: "Hygiene",
+    price: 4.8,
+    defaultQty: 1,
+    purpose: "Daily self-care and confidence.",
+    evidenceCue: "Check unit price and product suitability.",
+  },
+  {
+    id: "soap",
+    name: "Soap or body wash",
+    category: "Hygiene",
+    price: 5.5,
+    defaultQty: 1,
+    purpose: "Basic washing and personal care.",
+    evidenceCue: "Compare price, size and skin sensitivity.",
+  },
+  {
+    id: "deodorant",
+    name: "Deodorant",
+    category: "Hygiene",
+    price: 4.5,
+    defaultQty: 1,
+    purpose: "Privacy, comfort and daily dignity.",
+    evidenceCue: "Compare size, cost and claims.",
+  },
+  {
+    id: "period-care",
+    name: "Period care pack",
+    category: "Health",
+    price: 8.9,
+    defaultQty: 1,
+    purpose: "Health need that should not be treated as optional.",
+    evidenceCue: "Consider dignity, access and consumer need.",
+  },
+  {
+    id: "socks",
+    name: "Warm socks",
+    category: "Comfort",
+    price: 9.5,
+    defaultQty: 1,
+    purpose: "Warmth, comfort and foot care.",
+    evidenceCue: "Test durability or compare fibres.",
+  },
+  {
+    id: "washcloth",
+    name: "Quick-dry washcloth",
+    category: "Hygiene",
+    price: 3.2,
+    defaultQty: 1,
+    purpose: "Reusable hygiene item with low storage burden.",
+    evidenceCue: "Test absorbency or drying time.",
+  },
+  {
+    id: "water-bottle",
+    name: "Reusable water bottle",
+    category: "Health",
+    price: 7,
+    defaultQty: 1,
+    purpose: "Hydration and reusability.",
+    evidenceCue: "Compare durability and leak resistance.",
+  },
+  {
+    id: "sunscreen",
+    name: "Travel sunscreen",
+    category: "Health",
+    price: 6.5,
+    defaultQty: 1,
+    purpose: "Protection during long periods outdoors.",
+    evidenceCue: "Check SPF, size and consumer information.",
+  },
+  {
+    id: "snack-bars",
+    name: "Muesli or protein bars",
+    category: "Food",
+    price: 6.7,
+    defaultQty: 1,
+    purpose: "Portable food support.",
+    evidenceCue: "Compare nutrition, quantity and shelf life.",
+  },
+  {
+    id: "sanitiser",
+    name: "Hand sanitiser",
+    category: "Health",
+    price: 3.5,
+    defaultQty: 1,
+    purpose: "Hygiene when facilities are limited.",
+    evidenceCue: "Check claim, size and safety information.",
+  },
+  {
+    id: "notebook",
+    name: "Notebook and pen",
+    category: "Connection",
+    price: 4.2,
+    defaultQty: 1,
+    purpose: "Agency, appointments and communication.",
+    evidenceCue: "Explain why dignity includes voice and agency.",
+  },
+  {
+    id: "poncho",
+    name: "Rain poncho",
+    category: "Comfort",
+    price: 5.8,
+    defaultQty: 1,
+    purpose: "Weather protection without bulky storage.",
+    evidenceCue: "Compare durability, size and practical value.",
+  },
+  {
+    id: "comb",
+    name: "Comb",
+    category: "Hygiene",
+    price: 2.5,
+    defaultQty: 1,
+    purpose: "Simple personal care.",
+    evidenceCue: "Explain value beyond price.",
+  },
+  {
+    id: "shampoo",
+    name: "Travel shampoo",
+    category: "Hygiene",
+    price: 5.3,
+    defaultQty: 1,
+    purpose: "Washing support with small carrying size.",
+    evidenceCue: "Compare volume, unit price and suitability.",
+  },
+];
+
 const lenses: Lens[] = [
   {
-    id: "maths",
+    id: "value",
     subject: "Mathematics",
     token: "VALUE",
-    signal: "$100",
-    question: "Can you prove the numbers work?",
-    claim:
-      "Mathematics is the proof layer. Students turn a compassionate idea into a costed, reasoned, scalable solution.",
+    prompt: "Can students prove the $100 works?",
     explicitTeaching: [
-      "Percentage of a quantity and one quantity as a percentage of another.",
-      "Money calculations using positive decimals, unit price, totals and comparisons.",
-      "Estimation, rounding and reasonableness checks before accepting a calculator answer.",
-      "Mathematical modelling: constraints, representation, solution and interpretation.",
+      "Percentages of quantities and one quantity as a percentage of another.",
+      "Positive decimal operations in money contexts.",
+      "Estimation, rounding and reasonableness checks.",
+      "Mathematical modelling with a real constraint.",
     ],
-    transferPrompts: [
-      "You have spent money in several categories. What percentage of the $100 does each category use?",
-      "If this kit worked, what would ten equivalent kits cost?",
-      "Estimate the total before calculating. Does your answer make sense?",
+    studentEvidence: [
+      "Accurate itemised budget.",
+      "Category percentages.",
+      "Scaling calculation for ten kits.",
+      "Explanation of assumptions and constraints.",
     ],
-    evidence:
-      "Itemised budget, category percentages, estimation notes, scaling calculation and written mathematical justification.",
-    assessed: ["MA-CN-001", "MA-CN-004", "MA-CN-005", "MA-MNA-001"],
-    practised: ["MA-UN-001", "MA-UN-005"],
+    codes: ["MA-CN-001", "MA-CN-004", "MA-CN-005", "MA-MNA-001"],
   },
   {
-    id: "hass",
+    id: "choice",
     subject: "HASS Economics",
     token: "CHOICE",
-    signal: "Basket",
-    question: "What will you choose and give up?",
-    claim:
-      "Economics is the decision layer. Students face scarcity, compare alternatives and justify how scarce resources should be allocated.",
+    prompt: "What will students choose and give up?",
     explicitTeaching: [
-      "Scarcity, resources, allocation and opportunity cost.",
-      "Consumers, producers, goods, services and types of suppliers.",
-      "Factors influencing consumer decisions: price, quality, need, access and value.",
-      "Budgeting for a short-term financial goal.",
+      "Scarcity, allocation and opportunity cost.",
+      "Consumers, producers, goods and services.",
+      "Consumer and financial decision factors.",
+      "Budgeting to achieve a short-term goal.",
     ],
-    transferPrompts: [
-      "You cannot buy everything. Which need has priority and why?",
-      "The cheapest option leaves money unspent, but is it the best value?",
-      "Which consumer responsibility matters when you choose products for someone else?",
+    studentEvidence: [
+      "Three-option decision matrix.",
+      "Opportunity-cost explanation.",
+      "Consumer decision justification.",
+      "Cost-benefit recommendation.",
     ],
-    evidence:
-      "Three-option decision matrix, final allocation rationale, budget justification and cost-benefit evaluation.",
-    assessed: ["HS-EB-001", "HS-EB-006", "HS-EB-007", "HS-EV-001"],
-    practised: ["HS-EB-002", "HS-EB-008", "HS-AN-001", "HS-AN-005"],
+    codes: ["HS-EB-001", "HS-EB-006", "HS-EB-007", "HS-EV-001"],
   },
   {
-    id: "science",
+    id: "evidence",
     subject: "Science Inquiry",
     token: "EVIDENCE",
-    signal: "Test",
-    question: "How do you know the product does what it claims?",
-    claim:
-      "Science is the evidence layer. Students do not claim Science Understanding coverage unless the teacher designs it, but Science Inquiry is authentic and assessable.",
+    prompt: "How do students know a product claim is trustworthy?",
     explicitTeaching: [
-      "Investigable questions, predictions and fair-test design.",
+      "Investigable questions and predictions.",
       "Independent, dependent and controlled variables.",
-      "Reproducible method, safe conduct and ethical consideration.",
-      "Tables, graphs, anomalies, patterns and evidence-based conclusions.",
+      "Reproducible methods, risk and ethical conduct.",
+      "Tables, graphs, patterns, anomalies and conclusions.",
     ],
-    transferPrompts: [
-      "Two products make competing claims. Which one should Shopfront trust?",
-      "What would make this test fair enough to inform a real purchase?",
-      "Does your data support spending part of the $100 on this item?",
+    studentEvidence: [
+      "Product test question and prediction.",
+      "Variables and method.",
+      "Results table and graph.",
+      "Evidence-based purchase recommendation.",
     ],
-    evidence:
-      "Product test plan, risk notes, results table, graph, conclusion and purchase recommendation.",
-    assessed: ["SC-QP-001", "SC-PC-001", "SC-PMA-001", "SC-PMA-002", "SC-EV-002"],
-    practised: ["Science Understanding is not claimed unless a teacher deliberately adds it."],
+    codes: ["SC-QP-001", "SC-PC-001", "SC-PMA-001", "SC-PMA-002", "SC-EV-002"],
   },
   {
-    id: "english",
+    id: "voice",
     subject: "English",
     token: "VOICE",
-    signal: "Pitch",
-    question: "Can you persuade a real audience using evidence?",
-    claim:
-      "English is the audience layer. The final communication has purpose, consequence and a real audience: Shopfront and the teaching team.",
+    prompt: "Can students persuade Shopfront with evidence?",
     explicitTeaching: [
-      "Audience, purpose, persuasive structure, claim and recommendation.",
-      "Using evidence, examples and substantiation to strengthen paragraphs.",
-      "Language choices that preserve dignity and shape relationships.",
-      "Editing and publishing written or multimodal texts for a specific audience.",
+      "Audience, purpose, claim and recommendation.",
+      "Persuasive structure and paragraph cohesion.",
+      "Evidence, examples and substantiation.",
+      "Respectful language that preserves dignity.",
     ],
-    transferPrompts: [
-      "Shopfront can only choose one proposal. How will you convince them?",
-      "Where is your evidence, and how does each piece support your claim?",
-      "Does your language describe people respectfully and precisely?",
+    studentEvidence: [
+      "One-page written proposal.",
+      "Evidence-based paragraphs.",
+      "Respectful language choices.",
+      "Optional two-minute pitch.",
     ],
-    evidence:
-      "One-page proposal, dignity statement, optional two-minute pitch and evidence-based persuasive paragraphs.",
-    assessed: ["EN-CT-001", "EN-TSO-002", "EN-LFI-001"],
-    practised: ["EN-CT-002", "EN-TSO-001", "EN-EWA-002"],
+    codes: ["EN-CT-001", "EN-TSO-002", "EN-LFI-001"],
   },
   {
-    id: "religion",
+    id: "dignity",
     subject: "Religion",
     token: "DIGNITY",
-    signal: "Person",
-    question: "Is this decision worthy of the person receiving it?",
-    claim:
-      "Religion is the moral spine. Students explain why the kit is about dignity, not simply cheap products.",
+    prompt: "Is the decision worthy of the person receiving it?",
     explicitTeaching: [
       "People are made in the image and likeness of God.",
-      "Human dignity does not depend on wealth, work or housing status.",
+      "Human dignity is inherent.",
       "Catholic Social Teaching: Common Good and Stewardship.",
-      "Religious inquiry skills: source purpose, point of view, evidence and conclusion.",
+      "Religious inquiry using source purpose, viewpoints and evidence.",
     ],
-    transferPrompts: [
-      "What is the difference between a cheap kit and a dignity kit?",
-      "How does this choice serve the Common Good?",
-      "Are you using the $100 as a steward of resources and of human dignity?",
+    studentEvidence: [
+      "Dignity rationale using Imago Dei.",
+      "Stewardship or Common Good explanation.",
+      "Sourced evidence about need.",
+      "Ethical conclusion.",
     ],
-    evidence:
-      "Dignity rationale using Imago Dei, Stewardship or Common Good, with sourced evidence and a clear conclusion.",
-    assessed: [
-      "Image and likeness of God",
-      "Stewardship",
-      "Common Good",
-      "Religious Inquiry Skills",
-    ],
-    practised: ["Using religious concepts to make an ethical decision."],
+    codes: ["Year 8 RE: Imago Dei", "Stewardship", "Common Good"],
   },
 ];
 
 const curriculumRows: CurriculumRow[] = [
   {
     subject: "Mathematics",
-    area: "Number and Algebra: Calculating with number",
     code: "MA-CN-001",
-    descriptor:
-      "Determine percentages of quantities and express one quantity as a percentage of another.",
-    teach: "Percentages of amounts, conversions and percentage allocation.",
-    trigger: "Prove how much of the $100 is spent on each need category.",
-    evidence: "Category percentages in the final budget.",
+    area: "Calculating with number",
+    teach: "Percentages of quantities and budget allocation.",
+    trigger: "Work out what percentage of the $100 each kit category uses.",
+    evidence: "Category percentages in the live budget.",
     status: "Directly assessed",
   },
   {
     subject: "Mathematics",
-    area: "Number and Algebra: Calculating with number",
     code: "MA-CN-004",
-    descriptor: "Multiply and divide positive decimals using flexible and efficient strategies.",
-    teach: "Money calculations, unit price, quantity times cost and cost per kit.",
-    trigger: "Build a full itemised kit under $100.",
-    evidence: "Accurate cost table and unit-price comparison.",
+    area: "Calculating with number",
+    teach: "Money calculations using positive decimals.",
+    trigger: "Calculate quantity times unit price for each item.",
+    evidence: "Accurate item totals.",
     status: "Directly assessed",
   },
   {
     subject: "Mathematics",
-    area: "Number and Algebra: Calculating with number",
     code: "MA-CN-005",
-    descriptor:
-      "Use appropriate rounding, estimation strategies and context to check reasonableness of solutions.",
-    teach: "Estimation before calculation and rounding in a money context.",
-    trigger: "Check whether the proposed total is realistic before finalising.",
-    evidence: "Estimation note and reasonableness explanation.",
+    area: "Calculating with number",
+    teach: "Rounding, estimation and reasonableness.",
+    trigger: "Check whether the final cost makes sense before recommending it.",
+    evidence: "Reasonableness check in the proposal summary.",
     status: "Directly assessed",
   },
   {
     subject: "Mathematics",
-    area: "Number and Algebra: Modelling",
     code: "MA-MNA-001",
-    descriptor:
-      "Analyse real-world constraints, represent them mathematically, solve and interpret the result.",
-    teach: "How to turn a real-world problem into a mathematical model.",
-    trigger: "Create the best possible dignity kit under a fixed $100 constraint.",
-    evidence: "Budget model, assumptions and interpreted recommendation.",
+    area: "Modelling",
+    teach: "Represent real constraints mathematically.",
+    trigger: "Build a complete kit under a fixed $100 constraint.",
+    evidence: "Budget model, assumptions and interpreted result.",
     status: "Directly assessed",
   },
   {
-    subject: "Mathematics",
-    area: "Number and Algebra: Understanding number",
-    code: "MA-UN-001",
-    descriptor: "Explore relationships between fractions, decimals and percentages.",
-    teach: "Equivalence between $27, 27 percent and 27 out of 100.",
-    trigger: "Translate budget allocations across forms.",
-    evidence: "Working shown in calculations.",
-    status: "Applied or practised",
-  },
-  {
-    subject: "Mathematics",
-    area: "Number and Algebra: Understanding number",
-    code: "MA-UN-005",
-    descriptor: "Apply proportional reasoning to equivalent ratios and fractions.",
-    teach: "Scaling a kit from one person to ten people.",
-    trigger: "If Shopfront had $1,000, how many equivalent kits could it create?",
-    evidence: "Scaling calculation.",
-    status: "Applied or practised",
-  },
-  {
     subject: "HASS Economics",
-    area: "Economics and Business: Allocation of resources",
     code: "HS-EB-001",
-    descriptor:
-      "The way markets in Australia influence decisions about the allocation of resources to goods and services.",
-    teach: "Scarcity, resources, allocation, opportunity cost, consumers and producers.",
-    trigger: "The $100 budget means every choice excludes another choice.",
-    evidence: "Allocation rationale and opportunity-cost explanation.",
+    area: "Allocation of resources",
+    teach: "Scarcity, resources, allocation and opportunity cost.",
+    trigger: "The kit cannot include everything; students must prioritise.",
+    evidence: "Allocation decision and opportunity-cost explanation.",
     status: "Directly assessed",
   },
   {
     subject: "HASS Economics",
-    area: "Economics and Business: Consumer decisions",
     code: "HS-EB-006",
-    descriptor: "Factors that influence major consumer and financial decisions.",
-    teach: "Price, quality, need, durability, access, substitutes and value.",
-    trigger: "Choose between cheap, durable, bulk and dignity-preserving options.",
-    evidence: "Purchasing matrix and consumer decision justification.",
+    area: "Consumer decisions",
+    teach: "Price, quality, need, durability, access and value.",
+    trigger: "Cheapest is not always the highest-value choice.",
+    evidence: "Decision matrix and final consumer choice.",
     status: "Directly assessed",
   },
   {
     subject: "HASS Economics",
-    area: "Economics and Business: Budgeting",
     code: "HS-EB-007",
-    descriptor:
-      "Ways individuals plan and budget to achieve short-term and long-term financial goals.",
-    teach: "Budget categories, constraints, trade-offs and monitoring totals.",
-    trigger: "Stay under $100 while meeting identified needs.",
-    evidence: "Budget plan and final balance.",
+    area: "Budgeting",
+    teach: "Planning and budgeting to meet a short-term goal.",
+    trigger: "Stay within $100 while meeting an identified need.",
+    evidence: "Budget balance and spending plan.",
     status: "Directly assessed",
   },
   {
     subject: "HASS Economics",
-    area: "HASS Skills: Evaluating",
     code: "HS-EV-001",
-    descriptor:
-      "Generate alternatives, compare options, evaluate costs and benefits and plan action.",
-    teach: "How to compare alternatives using consistent criteria.",
-    trigger: "Compare at least three kit configurations before choosing one.",
-    evidence: "Decision matrix and action recommendation.",
+    area: "Evaluating",
+    teach: "Generate alternatives, compare options, evaluate costs and benefits.",
+    trigger: "Compare at least three possible kit strategies.",
+    evidence: "Chosen strategy and justification.",
     status: "Directly assessed",
   },
   {
-    subject: "HASS Economics",
-    area: "Economics and Business: Demand and supply",
-    code: "HS-EB-002",
-    descriptor: "How demand and supply models show interactions between consumers and businesses.",
-    teach: "Demand, supply, availability and price movement.",
-    trigger: "Explain why essential product prices or availability can change.",
-    evidence: "Supplier comparison notes.",
-    status: "Applied or practised",
-  },
-  {
-    subject: "HASS Economics",
-    area: "Economics and Business: Consumer rights",
-    code: "HS-EB-008",
-    descriptor: "Rights and responsibilities of consumers and businesses in Australia.",
-    teach: "Accurate product information, safe products, misleading claims and refunds.",
-    trigger: "Decide whether a product is safe, truthful and suitable for someone else.",
-    evidence: "Consumer responsibility notes in purchasing rationale.",
-    status: "Applied or practised",
-  },
-  {
     subject: "Science Inquiry",
-    area: "Science Inquiry: Questioning and predicting",
     code: "SC-QP-001",
-    descriptor:
-      "Propose investigable questions and make predictions to identify patterns and test relationships.",
-    teach: "Testable questions and predictions linked to a product claim.",
-    trigger: "Which product claim should Shopfront trust?",
-    evidence: "Investigation question and prediction.",
+    area: "Questioning and predicting",
+    teach: "Investigable questions and predictions.",
+    trigger: "Two products make competing claims.",
+    evidence: "Product test question and prediction.",
     status: "Directly assessed",
   },
   {
     subject: "Science Inquiry",
-    area: "Science Inquiry: Planning and conducting",
     code: "SC-PC-001",
-    descriptor:
-      "Plan and conduct reproducible investigations, manage risks and consider ethical issues.",
-    teach: "Variables, fair testing, repeated trials, risk and reproducibility.",
-    trigger: "Design a fair product test before spending the money.",
-    evidence: "Method, variables table and risk notes.",
+    area: "Planning and conducting",
+    teach: "Variables, reproducibility, risk and ethical conduct.",
+    trigger: "Design a fair product test before spending.",
+    evidence: "Variables, method and risk notes.",
     status: "Directly assessed",
   },
   {
     subject: "Science Inquiry",
-    area: "Science Inquiry: Processing, modelling and analysing",
     code: "SC-PMA-001",
-    descriptor: "Construct tables and graphs to organise and process data.",
-    teach: "Recording data clearly and choosing an appropriate graph.",
-    trigger: "Represent test results for a purchase recommendation.",
+    area: "Processing and analysing",
+    teach: "Tables and graphs to organise data.",
+    trigger: "Represent results for the product recommendation.",
     evidence: "Results table and graph.",
     status: "Directly assessed",
   },
   {
     subject: "Science Inquiry",
-    area: "Science Inquiry: Processing, modelling and analysing",
     code: "SC-PMA-002",
-    descriptor:
-      "Analyse data, identify patterns and anomalies, and draw conclusions based on evidence.",
-    teach: "Pattern finding, anomaly discussion and evidence-based conclusions.",
-    trigger: "Does the data justify including this product in the kit?",
-    evidence: "Conclusion linked to the data.",
+    area: "Processing and analysing",
+    teach: "Patterns, anomalies and evidence-based conclusions.",
+    trigger: "Decide whether the data justifies the item.",
+    evidence: "Conclusion linked to data.",
     status: "Directly assessed",
   },
   {
     subject: "Science Inquiry",
-    area: "Science Inquiry: Evaluating",
     code: "SC-EV-002",
-    descriptor:
-      "Construct evidence-based arguments to support conclusions or evaluate claims.",
-    teach: "How to evaluate claims using test evidence rather than advertising.",
-    trigger: "Should Shopfront trust the product claim?",
+    area: "Evaluating",
+    teach: "Construct evidence-based arguments to evaluate claims.",
+    trigger: "Shopfront cannot rely on advertising claims alone.",
     evidence: "Scientific recommendation in the final proposal.",
     status: "Directly assessed",
   },
   {
-    subject: "Science Inquiry",
-    area: "Science Understanding",
-    code: "Not claimed",
-    descriptor:
-      "The kit does not automatically cover a Year 8 Science Understanding descriptor.",
-    teach: "Only add content-specific Science Understanding if the Science teacher designs it.",
-    trigger: "Keep the Science claim defensible.",
-    evidence: "No formal claim unless deliberately designed.",
-    status: "Context only",
-  },
-  {
     subject: "English",
-    area: "Literacy: Creating texts",
     code: "EN-CT-001",
-    descriptor:
-      "Plan, create, edit and publish written and multimodal texts for purpose and audience.",
-    teach: "Proposal structure, audience, purpose, editing and publication.",
-    trigger: "Convince Shopfront that this is the best use of $100.",
-    evidence: "One-page final Shopfront proposal.",
+    area: "Creating texts",
+    teach: "Plan, create, edit and publish for purpose and audience.",
+    trigger: "Convince Shopfront that the kit is the best use of funds.",
+    evidence: "One-page proposal.",
     status: "Directly assessed",
   },
   {
     subject: "English",
-    area: "Language: Cohesion",
     code: "EN-TSO-002",
-    descriptor:
-      "Strengthen paragraphs with examples, quotations and substantiation of claims.",
-    teach: "Claim, evidence, explanation and paragraph cohesion.",
-    trigger: "Every recommendation must be supported by evidence.",
-    evidence: "Substantiated persuasive paragraphs.",
+    area: "Cohesion",
+    teach: "Use evidence, examples and substantiation of claims.",
+    trigger: "Every recommendation must be backed by evidence.",
+    evidence: "Substantiated proposal paragraphs.",
     status: "Directly assessed",
   },
   {
     subject: "English",
-    area: "Language: Interacting with others",
     code: "EN-LFI-001",
-    descriptor: "Recognise how language shapes relationships and roles.",
-    teach: "Respectful language, dignity, power and representation.",
-    trigger: "Choose language that does not diminish people experiencing hardship.",
-    evidence: "Language choices in the dignity rationale and proposal.",
+    area: "Language for interacting with others",
+    teach: "How language shapes relationships, roles and dignity.",
+    trigger: "Choose precise language such as people experiencing homelessness.",
+    evidence: "Language choices in the proposal and dignity rationale.",
     status: "Directly assessed",
-  },
-  {
-    subject: "English",
-    area: "Literacy: Creating texts",
-    code: "EN-CT-002",
-    descriptor: "Plan, rehearse and deliver spoken and multimodal presentations.",
-    teach: "Oral pitch structure, rehearsal, voice and multimodal support.",
-    trigger: "Deliver a two-minute pitch to Shopfront or teachers.",
-    evidence: "Optional pitch.",
-    status: "Applied or practised",
   },
   {
     subject: "Religion",
-    area: "Belief, Teaching, Texts",
     code: "Year 8 RE",
-    descriptor: "People are made in the image and likeness of God.",
+    area: "Belief, Teaching, Texts",
     teach: "Imago Dei and inherent human worth.",
     trigger: "What makes this a dignity kit rather than a cheap kit?",
     evidence: "Dignity statement using the concept correctly.",
@@ -403,211 +430,484 @@ const curriculumRows: CurriculumRow[] = [
   },
   {
     subject: "Religion",
-    area: "People, Values, Society",
     code: "Year 8 RE",
-    descriptor: "Catholic Social Teaching: Stewardship and Common Good.",
-    teach: "Responsible use of resources and action for the good of all.",
-    trigger: "How should the $100 be used responsibly and ethically?",
-    evidence: "Ethical justification in the final recommendation.",
+    area: "People, Values, Society",
+    teach: "Common Good and Stewardship.",
+    trigger: "Use the $100 responsibly and ethically.",
+    evidence: "Ethical explanation in final recommendation.",
     status: "Directly assessed",
   },
   {
     subject: "Religion",
-    area: "Religious Inquiry Skills",
     code: "Year 8 RE",
-    descriptor:
-      "Locate information, identify source purpose and viewpoints, use evidence and draw conclusions.",
-    teach: "Source origin, purpose, point of view, usefulness and conclusion.",
-    trigger: "Use evidence about needs, homelessness and dignity to justify the kit.",
+    area: "Religious Inquiry Skills",
+    teach: "Source purpose, point of view, usefulness and conclusion.",
+    trigger: "Use evidence about need and dignity to justify decisions.",
     evidence: "Sourced dignity rationale.",
     status: "Directly assessed",
   },
   {
-    subject: "HASS",
-    area: "History, Geography and Civics",
+    subject: "Science Understanding",
     code: "Not claimed",
-    descriptor:
-      "These areas can provide context but should not be forced into formal assessment for this project.",
-    teach: "Use only if a teacher deliberately designs a separate extension.",
-    trigger: "Protect the credibility of the pitch.",
-    evidence: "No formal claim in the shared assessment.",
+    area: "Content descriptors",
+    teach: "Add only if a Science teacher designs a content-specific link.",
+    trigger: "Keep the pitch defensible.",
+    evidence: "No automatic claim.",
+    status: "Context only",
+  },
+  {
+    subject: "History, Geography and Civics",
+    code: "Not claimed",
+    area: "Optional extension",
+    teach: "Use as context only unless deliberately redesigned.",
+    trigger: "Avoid forced curriculum claims.",
+    evidence: "No formal assessment claim.",
     status: "Context only",
   },
 ];
 
-const deliverables = [
+const strategies = [
   {
-    part: "Part A",
-    name: "The $100 Kit",
-    detail:
-      "Item list, supplier, quantity, unit price, total, category percentages and remaining balance.",
-    assesses: "Mathematics + HASS",
+    id: "balanced",
+    name: "Balanced dignity kit",
+    cost: 89.9,
+    benefit: "Covers hygiene, health, food, comfort and agency without exhausting the whole budget.",
+    tradeoff: "Does not maximise any single category.",
   },
   {
-    part: "Part B",
-    name: "Decision Matrix",
-    detail:
-      "Three alternative configurations compared by cost, benefits, limitations, evidence and final value.",
-    assesses: "HASS + Mathematics",
+    id: "hygiene-first",
+    name: "Hygiene-first kit",
+    cost: 82.4,
+    benefit: "Prioritises personal care, privacy and repeat-use hygiene products.",
+    tradeoff: "Less money remains for food or weather protection.",
   },
   {
-    part: "Part C",
-    name: "Product Test",
-    detail:
-      "One product claim tested through question, prediction, variables, method, table, graph and conclusion.",
-    assesses: "Science Inquiry",
-  },
-  {
-    part: "Part D",
-    name: "Dignity Statement",
-    detail:
-      "A 200-word explanation using Imago Dei plus Stewardship or Common Good to justify the choices.",
-    assesses: "Religion + English",
-  },
-  {
-    part: "Part E",
-    name: "Final Shopfront Proposal",
-    detail:
-      "One-page proposal or two-minute pitch with claim, evidence, economic reasoning and recommendation.",
-    assesses: "English + synthesis",
+    id: "comfort-ready",
+    name: "Comfort-ready kit",
+    cost: 97.6,
+    benefit: "Adds warmth, weather protection and more durable items.",
+    tradeoff: "Leaves little flexibility for individual needs.",
   },
 ];
 
-const sequence = [
+const checklist = [
   {
-    title: "Teach",
-    detail: "Each subject explicitly teaches its own knowledge first.",
+    id: "budget",
+    label: "Budget table includes quantity, unit price, total and category percentages.",
   },
   {
-    title: "Launch",
-    detail: "Students receive the authentic Shopfront $100 brief and the blank kit board.",
+    id: "decision",
+    label: "Students compare at least three kit options before recommending one.",
   },
   {
-    title: "Recognise",
-    detail: "Puzzle signals cue students to retrieve the right subject knowledge.",
+    id: "science",
+    label: "One product claim is tested with variables, data, graph and conclusion.",
   },
   {
-    title: "Apply",
-    detail: "Teams build budgets, matrices, tests, dignity rationales and proposals.",
+    id: "dignity",
+    label: "Dignity rationale uses Imago Dei plus Common Good or Stewardship.",
   },
   {
-    title: "Assess",
-    detail: "Teachers mark only the evidence that belongs to their curriculum area.",
-  },
-];
-
-const clueLevels = [
-  {
-    level: "Clue 1",
-    name: "Metacognitive",
-    detail: "Which subject have you learned something in that could help solve this problem?",
-  },
-  {
-    level: "Clue 2",
-    name: "Curriculum memory",
-    detail: "Think back to scarcity, allocation, percentages, fair testing or persuasive evidence.",
-  },
-  {
-    level: "Clue 3",
-    name: "Scaffold",
-    detail: "Use the named concept and complete the next calculation, test step or paragraph move.",
+    id: "proposal",
+    label: "Final proposal uses persuasive structure, evidence and respectful language.",
   },
 ];
 
-const subjects = ["All", ...Array.from(new Set(curriculumRows.map((row) => row.subject)))];
-const statuses: Array<"All" | Status> = [
-  "All",
-  "Directly assessed",
-  "Applied or practised",
-  "Context only",
-];
+const defaultQuantities = starterItems.reduce<Record<string, number>>((acc, item) => {
+  acc[item.id] = item.defaultQty;
+  return acc;
+}, {});
+
+const defaultNotes: Notes = {
+  need: "A one-person kit that protects hygiene, comfort, health and agency while staying realistic for Shopfront to source.",
+  science:
+    "Does a quick-dry washcloth absorb enough water and dry faster than a cheaper cloth to justify its place in the kit?",
+  dignity:
+    "The kit should recognise the person as more than a need to be solved. It should protect privacy, health, agency and comfort.",
+  pitch:
+    "Shopfront should adopt this kit because it uses a small budget carefully while still treating the recipient as a person with inherent dignity.",
+};
 
 export default function Home() {
-  const [selectedLensId, setSelectedLensId] = useState("maths");
-  const [selectedSubject, setSelectedSubject] = useState("All");
-  const [selectedStatus, setSelectedStatus] = useState<"All" | Status>("Directly assessed");
+  const [quantities, setQuantities] = useState<Record<string, number>>(defaultQuantities);
+  const [customItems, setCustomItems] = useState<KitItem[]>([]);
+  const [customName, setCustomName] = useState("");
+  const [customCategory, setCustomCategory] = useState<Category>("Hygiene");
+  const [customPrice, setCustomPrice] = useState("");
+  const [activeLensId, setActiveLensId] = useState("value");
+  const [subjectFilter, setSubjectFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState<"All" | Status>("Directly assessed");
+  const [selectedStrategyId, setSelectedStrategyId] = useState("balanced");
+  const [notes, setNotes] = useState<Notes>(defaultNotes);
+  const [checkedEvidence, setCheckedEvidence] = useState<Record<string, boolean>>({});
+  const [copied, setCopied] = useState(false);
+  const storageReady = useRef(false);
 
-  const selectedLens = lenses.find((lens) => lens.id === selectedLensId) ?? lenses[0];
+  useEffect(() => {
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as {
+          quantities?: Record<string, number>;
+          customItems?: KitItem[];
+          selectedStrategyId?: string;
+          activeLensId?: string;
+          notes?: Notes;
+          checkedEvidence?: Record<string, boolean>;
+        };
+        setQuantities({ ...defaultQuantities, ...(parsed.quantities ?? {}) });
+        setCustomItems(parsed.customItems ?? []);
+        setSelectedStrategyId(parsed.selectedStrategyId ?? "balanced");
+        setActiveLensId(parsed.activeLensId ?? "value");
+        setNotes({ ...defaultNotes, ...(parsed.notes ?? {}) });
+        setCheckedEvidence(parsed.checkedEvidence ?? {});
+      } catch {
+        window.localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+    storageReady.current = true;
+  }, []);
 
-  const filteredRows = useMemo(() => {
-    return curriculumRows.filter((row) => {
-      const subjectMatches = selectedSubject === "All" || row.subject === selectedSubject;
-      const statusMatches = selectedStatus === "All" || row.status === selectedStatus;
-      return subjectMatches && statusMatches;
-    });
-  }, [selectedStatus, selectedSubject]);
+  useEffect(() => {
+    if (!storageReady.current) return;
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        quantities,
+        customItems,
+        selectedStrategyId,
+        activeLensId,
+        notes,
+        checkedEvidence,
+      }),
+    );
+  }, [activeLensId, checkedEvidence, customItems, notes, quantities, selectedStrategyId]);
 
-  const directCount = curriculumRows.filter((row) => row.status === "Directly assessed").length;
-  const practiceCount = curriculumRows.filter((row) => row.status === "Applied or practised").length;
-  const subjectCount = new Set(
-    curriculumRows
-      .filter((row) => row.status === "Directly assessed")
-      .map((row) => row.subject),
-  ).size;
+  const allItems = useMemo(() => [...starterItems, ...customItems], [customItems]);
+  const selectedLens = lenses.find((lens) => lens.id === activeLensId) ?? lenses[0];
+  const selectedStrategy = strategies.find((strategy) => strategy.id === selectedStrategyId) ?? strategies[0];
+
+  const selectedItems = useMemo(() => {
+    return allItems
+      .map((item) => ({
+        ...item,
+        quantity: quantities[item.id] ?? 0,
+        total: (quantities[item.id] ?? 0) * item.price,
+      }))
+      .filter((item) => item.quantity > 0);
+  }, [allItems, quantities]);
+
+  const total = selectedItems.reduce((sum, item) => sum + item.total, 0);
+  const remaining = BUDGET - total;
+  const percentUsed = Math.min(100, Math.round((total / BUDGET) * 100));
+  const checkedCount = checklist.filter((item) => checkedEvidence[item.id]).length;
+  const readinessScore = Math.round(
+    ((remaining >= 0 ? 1 : 0) + (selectedItems.length >= 8 ? 1 : 0) + checkedCount / checklist.length) /
+      3 *
+      100,
+  );
+
+  const categoryTotals = categories.map((category) => {
+    const amount = selectedItems
+      .filter((item) => item.category === category)
+      .reduce((sum, item) => sum + item.total, 0);
+    return {
+      category,
+      amount,
+      percent: total > 0 ? Math.round((amount / total) * 100) : 0,
+    };
+  });
+
+  const filteredCurriculumRows = curriculumRows.filter((row) => {
+    const subjectMatches = subjectFilter === "All" || row.subject === subjectFilter;
+    const statusMatches = statusFilter === "All" || row.status === statusFilter;
+    return subjectMatches && statusMatches;
+  });
+
+  const subjectOptions = ["All", ...Array.from(new Set(curriculumRows.map((row) => row.subject)))];
+
+  const summaryText = useMemo(() => {
+    const itemList =
+      selectedItems.length > 0
+        ? selectedItems.map((item) => `${item.quantity} x ${item.name} (${money(item.total)})`).join(", ")
+        : "No items selected";
+
+    const categoriesText = categoryTotals
+      .filter((category) => category.amount > 0)
+      .map((category) => `${category.category}: ${money(category.amount)} (${category.percent}%)`)
+      .join("; ");
+
+    return [
+      "$100 Human Dignity Kit Builder",
+      "",
+      `Total cost: ${money(total)}. Remaining budget: ${money(remaining)}.`,
+      `Selected items: ${itemList}.`,
+      `Category allocation: ${categoriesText || "No allocation yet"}.`,
+      `Recommended strategy: ${selectedStrategy.name}. ${selectedStrategy.benefit}`,
+      "",
+      `Need statement: ${notes.need}`,
+      `Science evidence question: ${notes.science}`,
+      `Dignity rationale: ${notes.dignity}`,
+      `Pitch claim: ${notes.pitch}`,
+      "",
+      "Assessment evidence: itemised budget, decision matrix, product test, dignity statement and final Shopfront proposal.",
+    ].join("\n");
+  }, [categoryTotals, notes, remaining, selectedItems, selectedStrategy, total]);
+
+  function changeQuantity(id: string, delta: number) {
+    setQuantities((current) => ({
+      ...current,
+      [id]: Math.max(0, (current[id] ?? 0) + delta),
+    }));
+  }
+
+  function addCustomItem() {
+    const price = Number(customPrice);
+    if (!customName.trim() || !Number.isFinite(price) || price <= 0) return;
+
+    const id = `custom-${Date.now()}`;
+    setCustomItems((current) => [
+      ...current,
+      {
+        id,
+        name: customName.trim(),
+        category: customCategory,
+        price,
+        defaultQty: 0,
+        purpose: "Teacher-added local item.",
+        evidenceCue: "Students justify whether this belongs in the kit.",
+      },
+    ]);
+    setQuantities((current) => ({ ...current, [id]: 1 }));
+    setCustomName("");
+    setCustomPrice("");
+  }
+
+  function resetWorkspace() {
+    setQuantities(defaultQuantities);
+    setCustomItems([]);
+    setSelectedStrategyId("balanced");
+    setActiveLensId("value");
+    setNotes(defaultNotes);
+    setCheckedEvidence({});
+    setCopied(false);
+    window.localStorage.removeItem(STORAGE_KEY);
+  }
+
+  async function copySummary() {
+    await navigator.clipboard.writeText(summaryText);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  }
 
   return (
     <main className="app-shell">
-      <aside className="nav-rail" aria-label="Proposal sections">
-        <a href="#brief">Brief</a>
-        <a href="#lenses">Lenses</a>
-        <a href="#matrix">Matrix</a>
-        <a href="#puzzle">Puzzle</a>
-        <a href="#assessment">Assess</a>
-        <a href="#sequence">Plan</a>
+      <aside className="side-nav" aria-label="App sections">
+        <a href="#builder">Builder</a>
+        <a href="#evidence">Evidence</a>
+        <a href="#curriculum">Curriculum</a>
+        <a href="#assessment">Assessment</a>
+        <a href="#summary">Summary</a>
       </aside>
 
-      <div className="proposal-content">
-        <section className="brief-band" id="brief">
-          <div className="brief-copy">
-            <p className="eyebrow">Teacher pitch dossier</p>
-            <h1>The $100 Human Dignity Kit Challenge</h1>
-            <p className="lead">
-              Students design the most effective dignity kit possible for $100. Their decisions must be
-              financially sound, evidence-based, respectful of human dignity and clearly justified to
-              Shopfront.
+      <div className="workspace">
+        <header className="topbar">
+          <div>
+            <p className="eyebrow">Shopfront Year 8</p>
+            <h1>$100 Human Dignity Kit Builder</h1>
+            <p className="topbar-intro">
+              The $100 Human Dignity Kit Challenge as a working staff proposal, student task model and
+              assessment evidence map.
             </p>
-            <div className="brief-actions" aria-label="Primary proposal actions">
-              <a href="#matrix">Check curriculum claims</a>
-              <button type="button" onClick={() => window.print()}>
-                Print pitch pack
+          </div>
+          <div className="topbar-actions">
+            <button type="button" onClick={() => window.print()}>
+              Print
+            </button>
+            <button type="button" onClick={resetWorkspace}>
+              Reset
+            </button>
+          </div>
+        </header>
+
+        <section className="builder-layout" id="builder">
+          <div className="catalog-panel">
+            <div className="section-title">
+              <div>
+                <p className="eyebrow">Build the kit</p>
+                <h2>Choose items under the $100 constraint</h2>
+              </div>
+              <span className={remaining >= 0 ? "health-chip good" : "health-chip alert"}>
+                {remaining >= 0 ? `${money(remaining)} left` : `${money(Math.abs(remaining))} over`}
+              </span>
+            </div>
+
+            <div className="item-grid">
+              {allItems.map((item) => {
+                const quantity = quantities[item.id] ?? 0;
+                return (
+                  <article className={quantity > 0 ? "item-row selected" : "item-row"} key={item.id}>
+                    <div>
+                      <span>{item.category}</span>
+                      <h3>{item.name}</h3>
+                      <p>{item.purpose}</p>
+                      <small>{item.evidenceCue}</small>
+                    </div>
+                    <div className="item-controls">
+                      <strong>{money(item.price)}</strong>
+                      <div className="stepper" aria-label={`${item.name} quantity`}>
+                        <button type="button" onClick={() => changeQuantity(item.id, -1)} aria-label={`Remove ${item.name}`}>
+                          -
+                        </button>
+                        <output>{quantity}</output>
+                        <button type="button" onClick={() => changeQuantity(item.id, 1)} aria-label={`Add ${item.name}`}>
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="custom-item-panel">
+              <label>
+                Local item
+                <input
+                  type="text"
+                  value={customName}
+                  onChange={(event) => setCustomName(event.target.value)}
+                  placeholder="e.g. laundry voucher"
+                />
+              </label>
+              <label>
+                Category
+                <select value={customCategory} onChange={(event) => setCustomCategory(event.target.value as Category)}>
+                  {categories.map((category) => (
+                    <option key={category}>{category}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Unit price
+                <input
+                  type="number"
+                  min="0"
+                  step="0.05"
+                  value={customPrice}
+                  onChange={(event) => setCustomPrice(event.target.value)}
+                  placeholder="0.00"
+                />
+              </label>
+              <button type="button" onClick={addCustomItem}>
+                Add item
               </button>
             </div>
           </div>
-          <div className="impact-panel" aria-label="Proposal evidence summary">
-            <p>Credibility test</p>
-            <strong>{directCount}</strong>
-            <span>direct assessment links across {subjectCount} learning areas</span>
-            <dl>
+
+          <aside className="budget-panel" aria-label="Budget summary">
+            <p className="eyebrow">Live budget</p>
+            <div className="budget-total">
+              <span>{money(total)}</span>
+              <strong>of $100 used</strong>
+            </div>
+            <div className="budget-bar" aria-label={`${percentUsed} percent of budget used`}>
+              <span style={{ width: `${percentUsed}%` }} />
+            </div>
+            <div className="budget-stats">
               <div>
-                <dt>Practised links</dt>
-                <dd>{practiceCount}</dd>
+                <span>{selectedItems.length}</span>
+                <p>items selected</p>
               </div>
               <div>
-                <dt>Forced claims</dt>
-                <dd>0</dd>
+                <span>{checkedCount}/5</span>
+                <p>evidence pieces</p>
               </div>
-            </dl>
+              <div>
+                <span>{readinessScore}%</span>
+                <p>pitch readiness</p>
+              </div>
+            </div>
+            <div className="allocation-list">
+              {categoryTotals.map((row) => (
+                <div key={row.category}>
+                  <span>{row.category}</span>
+                  <strong>{money(row.amount)}</strong>
+                  <div className="allocation-bar" aria-label={`${row.category} ${row.percent} percent`}>
+                    <span style={{ width: `${row.percent}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </aside>
+        </section>
+
+        <section className="evidence-layout" id="evidence">
+          <div className="section-title">
+            <div>
+              <p className="eyebrow">Decision evidence</p>
+              <h2>Compare options before recommending one</h2>
+            </div>
+          </div>
+
+          <div className="strategy-grid">
+            {strategies.map((strategy) => (
+              <button
+                className={selectedStrategy.id === strategy.id ? "strategy-card selected" : "strategy-card"}
+                key={strategy.id}
+                onClick={() => setSelectedStrategyId(strategy.id)}
+                type="button"
+              >
+                <span>{money(strategy.cost)}</span>
+                <h3>{strategy.name}</h3>
+                <p>{strategy.benefit}</p>
+                <small>{strategy.tradeoff}</small>
+              </button>
+            ))}
+          </div>
+
+          <div className="notes-grid">
+            <label>
+              Identified need
+              <textarea value={notes.need} onChange={(event) => setNotes({ ...notes, need: event.target.value })} />
+            </label>
+            <label>
+              Product test question
+              <textarea
+                value={notes.science}
+                onChange={(event) => setNotes({ ...notes, science: event.target.value })}
+              />
+            </label>
+            <label>
+              Human dignity rationale
+              <textarea
+                value={notes.dignity}
+                onChange={(event) => setNotes({ ...notes, dignity: event.target.value })}
+              />
+            </label>
+            <label>
+              Shopfront pitch claim
+              <textarea value={notes.pitch} onChange={(event) => setNotes({ ...notes, pitch: event.target.value })} />
+            </label>
           </div>
         </section>
 
-        <section className="lens-workbench" id="lenses">
-          <div className="section-heading">
-            <p className="eyebrow">Five disciplinary lenses</p>
-            <h2>Each subject owns a real part of the problem</h2>
-            <p>
-              The project does not replace explicit teaching. It gives students a real moment to recognise,
-              retrieve and apply what they have already learned.
-            </p>
+        <section className="curriculum-section" id="curriculum">
+          <div className="section-title">
+            <div>
+              <p className="eyebrow">Curriculum engine</p>
+              <h2>Show teachers exactly where the project earns its place</h2>
+            </div>
           </div>
 
-          <div className="lens-grid">
-            <div className="lens-selector" role="tablist" aria-label="Learning area lenses">
+          <div className="lens-workspace">
+            <div className="lens-tabs" role="tablist" aria-label="Curriculum lenses">
               {lenses.map((lens) => (
                 <button
                   aria-selected={selectedLens.id === lens.id}
-                  className={selectedLens.id === lens.id ? "is-active" : ""}
+                  className={selectedLens.id === lens.id ? "active" : ""}
                   key={lens.id}
-                  onClick={() => setSelectedLensId(lens.id)}
+                  onClick={() => setActiveLensId(lens.id)}
                   role="tab"
                   type="button"
                 >
@@ -617,21 +917,12 @@ export default function Home() {
               ))}
             </div>
 
-            <article className="lens-detail">
-              <div className="token-lockup">
-                <div className="token-mark" aria-hidden="true">
-                  {selectedLens.signal}
-                </div>
+            <article className="lens-card">
+              <p className="eyebrow">{selectedLens.token}</p>
+              <h3>{selectedLens.prompt}</h3>
+              <div className="lens-columns">
                 <div>
-                  <p>{selectedLens.token}</p>
-                  <h3>{selectedLens.question}</h3>
-                </div>
-              </div>
-              <p className="lens-claim">{selectedLens.claim}</p>
-
-              <div className="detail-columns">
-                <div>
-                  <h4>Teach explicitly first</h4>
+                  <h4>Explicit teaching</h4>
                   <ul>
                     {selectedLens.explicitTeaching.map((item) => (
                       <li key={item}>{item}</li>
@@ -639,53 +930,38 @@ export default function Home() {
                   </ul>
                 </div>
                 <div>
-                  <h4>Transfer cues</h4>
+                  <h4>Student evidence</h4>
                   <ul>
-                    {selectedLens.transferPrompts.map((item) => (
+                    {selectedLens.studentEvidence.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
                 </div>
               </div>
-
-              <div className="evidence-row">
-                <div>
-                  <span>Assessable evidence</span>
-                  <p>{selectedLens.evidence}</p>
-                </div>
-                <div>
-                  <span>Direct codes</span>
-                  <p>{selectedLens.assessed.join(", ")}</p>
-                </div>
+              <div className="code-strip">
+                {selectedLens.codes.map((code) => (
+                  <code key={code}>{code}</code>
+                ))}
               </div>
             </article>
           </div>
-        </section>
 
-        <section className="matrix-section" id="matrix">
-          <div className="section-heading">
-            <p className="eyebrow">Curriculum legitimacy matrix</p>
-            <h2>What is taught, where it transfers, and what teachers can mark</h2>
-          </div>
-
-          <div className="filters" aria-label="Curriculum filters">
+          <div className="filters">
             <label>
               Subject
-              <select value={selectedSubject} onChange={(event) => setSelectedSubject(event.target.value)}>
-                {subjects.map((subject) => (
+              <select value={subjectFilter} onChange={(event) => setSubjectFilter(event.target.value)}>
+                {subjectOptions.map((subject) => (
                   <option key={subject}>{subject}</option>
                 ))}
               </select>
             </label>
             <label>
-              Claim type
-              <select
-                value={selectedStatus}
-                onChange={(event) => setSelectedStatus(event.target.value as "All" | Status)}
-              >
-                {statuses.map((status) => (
-                  <option key={status}>{status}</option>
-                ))}
+              Claim
+              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "All" | Status)}>
+                <option>All</option>
+                <option>Directly assessed</option>
+                <option>Applied or practised</option>
+                <option>Context only</option>
               </select>
             </label>
           </div>
@@ -695,7 +971,7 @@ export default function Home() {
               <thead>
                 <tr>
                   <th>Subject</th>
-                  <th>Curriculum point</th>
+                  <th>Code</th>
                   <th>Teach first</th>
                   <th>Project trigger</th>
                   <th>Evidence</th>
@@ -703,7 +979,7 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody>
-                {filteredRows.map((row) => (
+                {filteredCurriculumRows.map((row) => (
                   <tr key={`${row.subject}-${row.code}-${row.area}`}>
                     <td>
                       <strong>{row.subject}</strong>
@@ -711,13 +987,12 @@ export default function Home() {
                     </td>
                     <td>
                       <code>{row.code}</code>
-                      <p>{row.descriptor}</p>
                     </td>
                     <td>{row.teach}</td>
                     <td>{row.trigger}</td>
                     <td>{row.evidence}</td>
                     <td>
-                      <span className={`status-pill ${statusClass(row.status)}`}>{row.status}</span>
+                      <span className={`status ${statusClass(row.status)}`}>{row.status}</span>
                     </td>
                   </tr>
                 ))}
@@ -726,107 +1001,73 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="puzzle-section" id="puzzle">
-          <div className="section-heading">
-            <p className="eyebrow">Physical transfer system</p>
-            <h2>The Dignity Kit Puzzle Board</h2>
-            <p>
-              Students collect five pieces without seeing subject labels first. The point is to notice the
-              problem type, retrieve the relevant curriculum and use it.
-            </p>
-          </div>
-
-          <div className="token-grid">
-            {lenses.map((lens) => (
-              <article className="token-card" key={lens.id}>
-                <div className="mini-token" aria-hidden="true">
-                  {lens.signal}
-                </div>
-                <span>{lens.token}</span>
-                <h3>{lens.question}</h3>
-                <p>{lens.subject}</p>
-              </article>
-            ))}
-          </div>
-
-          <div className="clue-grid">
-            {clueLevels.map((clue) => (
-              <article className="clue-card" key={clue.level}>
-                <span>{clue.level}</span>
-                <h3>{clue.name}</h3>
-                <p>{clue.detail}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
         <section className="assessment-section" id="assessment">
-          <div className="section-heading">
-            <p className="eyebrow">Assessment design</p>
-            <h2>One portfolio, separate legitimate assessment evidence</h2>
-            <p>
-              Students submit one coherent project portfolio. Each teacher marks only the evidence that
-              belongs to their curriculum area.
-            </p>
+          <div className="section-title">
+            <div>
+              <p className="eyebrow">Assessment pack</p>
+              <h2>One portfolio with subject-owned evidence</h2>
+            </div>
+            <span className="health-chip">{checkedCount} complete</span>
           </div>
 
-          <div className="deliverable-grid">
-            {deliverables.map((deliverable) => (
-              <article className="deliverable-card" key={deliverable.part}>
-                <span>{deliverable.part}</span>
-                <h3>{deliverable.name}</h3>
-                <p>{deliverable.detail}</p>
-                <strong>{deliverable.assesses}</strong>
-              </article>
+          <div className="checklist-grid">
+            {checklist.map((item) => (
+              <label className="check-row" key={item.id}>
+                <input
+                  type="checkbox"
+                  checked={Boolean(checkedEvidence[item.id])}
+                  onChange={(event) =>
+                    setCheckedEvidence((current) => ({
+                      ...current,
+                      [item.id]: event.target.checked,
+                    }))
+                  }
+                />
+                <span>{item.label}</span>
+              </label>
             ))}
           </div>
 
-          <div className="rubric-panel">
-            <div>
-              <h3>Simple marking scale</h3>
-              <p>
-                3 = Secure, 2 = Developing, 1 = Emerging, 0 = Not demonstrated. This keeps the
-                project easy to mark while still ticking curriculum boxes.
-              </p>
-            </div>
-            <div className="rubric-list" aria-label="Subject assessment ownership">
-              <span>Maths: budget, percentages, decimals, estimation and modelling</span>
-              <span>HASS: scarcity, allocation, budgeting and decision evaluation</span>
-              <span>Science: question, fair test, data, graph and evidence-based conclusion</span>
-              <span>English: persuasive proposal, evidence, cohesion and respectful language</span>
-              <span>Religion: Imago Dei, Stewardship, Common Good and sourced dignity rationale</span>
-            </div>
+          <div className="rubric-grid">
+            <article>
+              <h3>3 - Secure</h3>
+              <p>Accurate, justified and clearly connected to the subject curriculum.</p>
+            </article>
+            <article>
+              <h3>2 - Developing</h3>
+              <p>Mostly accurate, with some explanation or evidence still incomplete.</p>
+            </article>
+            <article>
+              <h3>1 - Emerging</h3>
+              <p>Partial evidence is present, but the curriculum concept is weakly applied.</p>
+            </article>
+            <article>
+              <h3>0 - Not demonstrated</h3>
+              <p>The required evidence is missing or not connected to the task.</p>
+            </article>
           </div>
         </section>
 
-        <section className="sequence-section" id="sequence">
-          <div className="section-heading">
-            <p className="eyebrow">Implementation sequence</p>
-            <h2>Learn, recognise, retrieve, apply, explain</h2>
+        <section className="summary-section" id="summary">
+          <div className="section-title">
+            <div>
+              <p className="eyebrow">Generated proposal</p>
+              <h2>Staff-ready summary</h2>
+            </div>
+            <button type="button" onClick={copySummary}>
+              {copied ? "Copied" : "Copy summary"}
+            </button>
           </div>
-
-          <div className="sequence-line">
-            {sequence.map((step, index) => (
-              <article key={step.title}>
-                <span>{index + 1}</span>
-                <h3>{step.title}</h3>
-                <p>{step.detail}</p>
-              </article>
-            ))}
-          </div>
-
-          <div className="teacher-note">
-            <h3>Pitch it as curriculum delivery, not an extra project</h3>
-            <p>
-              The proposal is strongest when teachers see what it replaces: a worksheet, test item or
-              isolated response can become authentic evidence in the shared portfolio. History, Geography
-              and Civics stay as possible context only, which protects the credibility of the model.
-            </p>
-          </div>
+          <pre>{summaryText}</pre>
         </section>
       </div>
     </main>
   );
+}
+
+function money(value: number) {
+  const sign = value < 0 ? "-" : "";
+  return `${sign}$${Math.abs(value).toFixed(2)}`;
 }
 
 function statusClass(status: Status) {

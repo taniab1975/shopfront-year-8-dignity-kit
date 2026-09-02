@@ -13,20 +13,21 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteTitle = "$100 Human Dignity Kit Proposal";
+const siteTitle = "$100 Human Dignity Kit Builder";
 const siteDescription =
-  "A teacher-facing pitch dossier for the Year 8 $100 Human Dignity Kit Challenge.";
+  "An interactive teacher proposal app for building, assessing and pitching the Year 8 $100 Human Dignity Kit Challenge.";
+const deployedOrigin = "https://shopfront-year-8-dignity-kit.taniabyrnes.chatgpt.site";
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
-  const host =
-    requestHeaders.get("x-forwarded-host") ??
-    requestHeaders.get("host") ??
-    "localhost:3001";
-  const protocol =
-    requestHeaders.get("x-forwarded-proto") ??
-    (host.startsWith("localhost") ? "http" : "https");
-  const origin = `${protocol}://${host}`;
+  const host = requestHeaders.get("host") ?? "";
+  const isLocalHost = host.startsWith("localhost") || host.startsWith("127.0.0.1");
+  const isSiteHost = host.endsWith(".chatgpt.site");
+  const origin = isLocalHost
+    ? `http://${host}`
+    : isSiteHost
+      ? `https://${host}`
+      : deployedOrigin;
   const imageUrl = new URL("/og.png", origin).toString();
 
   return {
