@@ -2,7 +2,7 @@
 
 An interactive teacher-facing proposal app for the Year 8 Shopfront `$100 Human Dignity Kit Challenge`.
 
-The app lets teachers build and adjust a sample dignity kit, see the $100 budget evidence live, connect decisions to curriculum codes, run the actual assessment task, give students an online guided template and generate a staff-ready proposal summary.
+The app lets teachers build and adjust a sample dignity kit, see the $100 budget evidence live, connect decisions to curriculum codes, run the actual assessment task, guide students through flexible capability tools, give students an online guided template and generate a staff-ready proposal summary.
 
 It shows how one authentic project can support curriculum delivery and assessment across:
 
@@ -24,6 +24,12 @@ It shows how one authentic project can support curriculum delivery and assessmen
 - A student-facing assessment task with required submissions
 - A subject-owned marking rubric using the 3, 2, 1, 0 scale
 - A classroom clue system for scaffolded assessment support
+- Flexible process checkpoints that support student pacing without micromanaging the project
+- A team working document for goals, roles, owners, dates, progress and plan adjustments
+- Qualitative critical-thinking tools for decision making, analysis, trade-offs and changed thinking
+- A group and individual engagement tracker based on reflection evidence rather than scores
+- Reporting attribute evidence for Collaboration, Engagement, Flexibility, Critical Thinking, and Respect & Responsibility
+- An individual capability brag book where students capture growth, artifacts of learning and next steps
 - An online student template with separate group and individual components
 - Typed-only student response fields that block paste, block drag-drop and flag sudden large insertions
 - A print-friendly pitch pack layout

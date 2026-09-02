@@ -39,6 +39,18 @@ test("server-renders the Human Dignity Kit builder app", async () => {
   assert.match(html, /Build the kit/);
   assert.match(html, /Live budget/);
   assert.match(html, /Decision evidence/);
+  assert.match(html, /Capability process tools/);
+  assert.match(html, /Self-paced targets, accountability and learning artifacts/);
+  assert.match(html, /Student-paced guide/);
+  assert.match(html, /Team working document/);
+  assert.match(html, /Decision making and analysis record/);
+  assert.match(html, /Qualitative decision matrix/);
+  assert.match(html, /Engagement check-in/);
+  assert.match(html, /Reporting attributes/);
+  assert.match(html, /Collaboration/);
+  assert.match(html, /Flexibility/);
+  assert.match(html, /Respect &amp; Responsibility/);
+  assert.match(html, /Capability brag book/);
   assert.match(html, /Curriculum engine/);
   assert.match(html, /Actual assessment/);
   assert.match(html, /Student task, required evidence and marking criteria/);

@@ -218,6 +218,7 @@ h4 {
 
 .builder-layout,
 .evidence-layout,
+.process-section,
 .curriculum-section,
 .assessment-section,
 .template-section,
@@ -235,6 +236,7 @@ h4 {
 .catalog-panel,
 .budget-panel,
 .evidence-layout,
+.process-section,
 .curriculum-section,
 .assessment-section,
 .template-section,
@@ -310,6 +312,14 @@ h4 {
 .item-row small,
 .strategy-card p,
 .strategy-card small,
+.process-principle p,
+.milestone-card p,
+.milestone-card small,
+.milestone-card strong,
+.tool-panel p,
+.team-task-row p,
+.attribute-card p,
+.portfolio-card span,
 .budget-stats p,
 .allocation-list span,
 .notes-grid label,
@@ -556,6 +566,317 @@ h4 {
   resize: vertical;
   padding: 12px;
   color: #1d282a;
+}
+
+.process-principle,
+.milestone-grid,
+.process-tools-grid,
+.reporting-attribute-grid,
+.portfolio-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.process-principle {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.process-principle article,
+.milestone-card,
+.tool-panel,
+.team-task-row,
+.engagement-row,
+.attribute-card,
+.portfolio-card {
+  border: 1px solid #e4dbcf;
+  border-radius: 8px;
+  background: white;
+}
+
+.process-principle article {
+  min-height: 154px;
+  padding: 18px;
+}
+
+.process-principle h3,
+.tool-panel h3,
+.attribute-card h3,
+.portfolio-card h3 {
+  font-size: 1.08rem;
+  line-height: 1.2;
+}
+
+.process-principle p,
+.tool-panel p,
+.milestone-card p,
+.team-task-row p,
+.attribute-card p {
+  margin-bottom: 0;
+}
+
+.milestone-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 12px 0;
+}
+
+.milestone-card {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 8px 10px;
+  min-height: 226px;
+  padding: 16px;
+}
+
+.milestone-card.complete {
+  border-color: rgba(22, 102, 112, 0.55);
+  background: #f3faf6;
+}
+
+.milestone-card input {
+  grid-row: 1 / span 5;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: var(--teal);
+}
+
+.milestone-card span {
+  color: var(--clay);
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.milestone-card h3 {
+  margin-bottom: 0;
+}
+
+.milestone-card strong {
+  color: #314346;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.milestone-card small {
+  font-size: 0.8rem;
+}
+
+.tool-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 18px;
+}
+
+.tool-heading,
+.attribute-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.soft-chip {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 11px;
+  background: #f2e8d9;
+  color: var(--teal-dark);
+  font-size: 0.74rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.reflection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reflection-grid.single {
+  grid-template-columns: 1fr;
+}
+
+.reflection-field {
+  display: grid;
+  gap: 8px;
+  color: #47514f;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.reflection-field.wide {
+  grid-column: 1 / -1;
+}
+
+.reflection-field textarea,
+.process-section input[type="text"],
+.process-section select {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: #1d282a;
+}
+
+.reflection-field textarea {
+  min-height: 112px;
+  resize: vertical;
+  padding: 12px;
+  text-transform: none;
+}
+
+.reflection-field textarea:focus-visible,
+.process-section input[type="text"]:focus-visible,
+.process-section select:focus-visible {
+  border-color: var(--teal);
+  outline: 3px solid rgba(22, 102, 112, 0.18);
+}
+
+.process-section input[type="text"],
+.process-section select {
+  min-height: 40px;
+  padding: 0 10px;
+  text-transform: none;
+}
+
+.team-task-list {
+  display: grid;
+  gap: 10px;
+}
+
+.team-task-row {
+  display: grid;
+  grid-template-columns: minmax(210px, 1.4fr) minmax(110px, 0.7fr) minmax(140px, 0.8fr) minmax(150px, 0.8fr);
+  gap: 10px;
+  align-items: start;
+  padding: 14px;
+}
+
+.team-task-row h4 {
+  margin-bottom: 6px;
+}
+
+.team-task-row label,
+.option-grid label,
+.engagement-row label {
+  display: grid;
+  gap: 6px;
+  color: #47514f;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.task-evidence {
+  grid-column: 1 / -1;
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.decision-table {
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+}
+
+.decision-table table {
+  min-width: 900px;
+}
+
+.qualitative-select {
+  min-width: 150px;
+}
+
+.process-tools-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.engagement-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.engagement-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(0, 1.2fr);
+  gap: 10px;
+  padding: 12px;
+}
+
+.reporting-attribute-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.attribute-card,
+.portfolio-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.attribute-card-header span,
+.portfolio-card > span {
+  color: var(--clay);
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.attribute-card-header select {
+  max-width: 170px;
+}
+
+.descriptor-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.descriptor-list label {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  color: #364244;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.descriptor-list input {
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  accent-color: var(--teal);
+}
+
+.descriptor-status {
+  border-radius: 8px;
+  padding: 10px;
+  background: #f4efe6;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.descriptor-status.ready {
+  background: #e3f2e6;
+  color: #254f2f;
+}
+
+.portfolio-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .lens-workspace {
@@ -1033,8 +1354,17 @@ td span {
   }
 
   .checklist-grid,
+  .milestone-grid,
+  .process-principle,
+  .process-tools-grid,
+  .reporting-attribute-grid,
   .template-field-grid,
-  .clue-grid {
+  .clue-grid,
+  .portfolio-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .team-task-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1053,7 +1383,7 @@ td span {
     position: sticky;
     top: 0;
     z-index: 3;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     height: auto;
     margin-bottom: 10px;
   }
@@ -1072,10 +1402,19 @@ td span {
   .item-grid,
   .custom-item-panel,
   .strategy-grid,
-  .notes-grid,
-  .lens-columns,
-  .assessment-brief,
-  .deliverables-panel,
+    .notes-grid,
+    .option-grid,
+    .process-principle,
+    .milestone-grid,
+    .process-tools-grid,
+    .reporting-attribute-grid,
+    .portfolio-grid,
+    .reflection-grid,
+    .team-task-row,
+    .engagement-row,
+    .lens-columns,
+    .assessment-brief,
+    .deliverables-panel,
   .template-mode-grid,
   .integrity-metrics,
   .template-field-grid,
@@ -1132,6 +1471,7 @@ td span {
   .catalog-panel,
   .budget-panel,
   .evidence-layout,
+  .process-section,
   .curriculum-section,
   .assessment-section,
   .template-section,
@@ -1146,6 +1486,11 @@ td span {
 
   .assessment-brief,
   .deliverables-panel,
+  .process-principle,
+  .milestone-grid,
+  .process-tools-grid,
+  .reporting-attribute-grid,
+  .portfolio-grid,
   .template-mode-grid,
   .integrity-panel,
   .template-actions,
@@ -1156,6 +1501,13 @@ td span {
 
   .assessment-brief article,
   .deliverables-panel,
+  .process-principle article,
+  .milestone-card,
+  .tool-panel,
+  .team-task-row,
+  .engagement-row,
+  .attribute-card,
+  .portfolio-card,
   .template-mode-grid article,
   .integrity-panel,
   .template-actions,

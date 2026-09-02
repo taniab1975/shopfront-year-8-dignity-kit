@@ -72,6 +72,42 @@ type AuthenticMetrics = {
   integrityConfirmed: boolean;
 };
 
+type ReportingLevel = "Excellent" | "Good" | "Satisfactory" | "Needs attention";
+
+type ReportingAttribute = {
+  id: string;
+  title: string;
+  shortName: string;
+  description: string;
+  descriptors: Record<ReportingLevel, string[]>;
+};
+
+type TeamTaskStatus = "Not started" | "In progress" | "Evidence ready" | "Complete";
+
+type TeamTask = {
+  id: string;
+  label: string;
+  evidence: string;
+};
+
+type DecisionCriterion = {
+  id: string;
+  label: string;
+  prompt: string;
+};
+
+type TimelinePhase = {
+  id: string;
+  checkpoint: string;
+  title: string;
+  teacherMove: string;
+  studentTool: string;
+  artifact: string;
+};
+
+type DecisionEvidenceLevel = "Not yet" | "Needs checking" | "Some evidence" | "Strong evidence";
+type EngagementSignal = "Not yet" | "Needs support" | "On track" | "Strong ownership";
+
 const STORAGE_KEY = "shopfront-dignity-kit-builder-v1";
 const BUDGET = 100;
 
@@ -697,6 +733,328 @@ const templateFields: TemplateField[] = [
   },
 ];
 
+const reportingLevels: ReportingLevel[] = ["Excellent", "Good", "Satisfactory", "Needs attention"];
+
+const reportingAttributes: ReportingAttribute[] = [
+  {
+    id: "collaboration",
+    title: "Collaboration",
+    shortName: "Works with others",
+    description: "How the student shares responsibility, supports peers and helps the team complete the task.",
+    descriptors: {
+      Excellent: [
+        "Consistently works positively and effectively with others.",
+        "Actively supports and encourages peers.",
+        "Shares responsibilities fairly and takes initiative.",
+        "Communicates clearly and respectfully.",
+      ],
+      Good: [
+        "Works well with others most of the time.",
+        "Contributes to group tasks and shares responsibilities.",
+        "Communicates appropriately with peers.",
+        "Supports a positive team environment.",
+      ],
+      Satisfactory: [
+        "Participates in group work when prompted.",
+        "Shares tasks but may rely on others at times.",
+        "Communicates adequately with peers.",
+        "Shows some awareness of teamwork expectations.",
+      ],
+      "Needs attention": [
+        "Struggles to work cooperatively with others.",
+        "Rarely contributes to group tasks.",
+        "Communication may be unclear or disrespectful.",
+        "Does not yet support a positive group environment.",
+      ],
+    },
+  },
+  {
+    id: "engagement",
+    title: "Engagement",
+    shortName: "Stays focused",
+    description: "How the student uses time, stays on task, seeks help and keeps moving toward the goal.",
+    descriptors: {
+      Excellent: [
+        "Consistently focused and on task.",
+        "Completes all work to a high standard.",
+        "Uses time effectively and independently.",
+        "Actively seeks help and sets learning goals.",
+      ],
+      Good: [
+        "Usually stays on task and completes work.",
+        "Uses time well with minimal reminders.",
+        "Attempts tasks to a good standard.",
+        "Seeks help when needed.",
+      ],
+      Satisfactory: [
+        "Sometimes on task but needs reminders.",
+        "Completes some work to an acceptable standard.",
+        "Uses time inconsistently.",
+        "Occasionally seeks help.",
+      ],
+      "Needs attention": [
+        "Frequently off task or disengaged.",
+        "Produces incomplete or minimal work.",
+        "Uses class time poorly.",
+        "Rarely seeks help or shows initiative.",
+      ],
+    },
+  },
+  {
+    id: "flexibility",
+    title: "Flexibility",
+    shortName: "Adapts and persists",
+    description: "How the student responds to feedback, challenge, new ideas and changes to the plan.",
+    descriptors: {
+      Excellent: [
+        "Embraces new ideas and challenges confidently.",
+        "Responds positively to feedback and change.",
+        "Shows strong perseverance in difficult tasks.",
+        "Demonstrates resilience and a growth mindset.",
+      ],
+      Good: [
+        "Accepts feedback and tries to improve.",
+        "Responds positively to most challenges.",
+        "Persists with some support.",
+        "Adjusts to change with a positive attitude.",
+      ],
+      Satisfactory: [
+        "Sometimes accepts feedback.",
+        "Attempts challenges but may give up easily.",
+        "Needs encouragement to persist.",
+        "Adjusts to change with support.",
+      ],
+      "Needs attention": [
+        "Resists feedback or change.",
+        "Avoids challenges.",
+        "Gives up easily when work is difficult.",
+        "Struggles to adapt to new situations.",
+      ],
+    },
+  },
+  {
+    id: "critical-thinking",
+    title: "Critical Thinking",
+    shortName: "Questions and analyses",
+    description: "How the student asks questions, connects ideas, uses evidence and reflects on decisions.",
+    descriptors: {
+      Excellent: [
+        "Asks insightful and thoughtful questions.",
+        "Makes strong connections in learning.",
+        "Applies knowledge creatively to solve problems.",
+        "Reflects deeply to improve understanding.",
+      ],
+      Good: [
+        "Asks relevant questions.",
+        "Makes connections with some support.",
+        "Applies learning to solve problems.",
+        "Reflects on learning when prompted.",
+      ],
+      Satisfactory: [
+        "Occasionally asks questions.",
+        "Makes simple connections.",
+        "Attempts problem-solving with guidance.",
+        "Gives limited reflection on learning.",
+      ],
+      "Needs attention": [
+        "Rarely asks questions or engages deeply.",
+        "Struggles to make connections.",
+        "Has difficulty applying knowledge.",
+        "Does not yet reflect on learning.",
+      ],
+    },
+  },
+  {
+    id: "respect-responsibility",
+    title: "Respect & Responsibility",
+    shortName: "Acts with integrity",
+    description: "How the student shows respect, reliability, honesty and responsibility for their actions.",
+    descriptors: {
+      Excellent: [
+        "Consistently respectful, kind and fair.",
+        "Takes full responsibility for actions.",
+        "Follows rules and expectations.",
+        "Acts with honesty and integrity.",
+      ],
+      Good: [
+        "Usually respectful and considerate.",
+        "Accepts responsibility for actions.",
+        "Follows rules most of the time.",
+        "Demonstrates honesty and reliability.",
+      ],
+      Satisfactory: [
+        "Generally respectful but inconsistent.",
+        "Sometimes takes responsibility.",
+        "Follows rules with reminders.",
+        "Shows a developing sense of responsibility.",
+      ],
+      "Needs attention": [
+        "Displays disrespectful behaviour.",
+        "Avoids responsibility for actions.",
+        "Does not follow rules or expectations.",
+        "Lacks honesty or reliability.",
+      ],
+    },
+  },
+];
+
+const teamTasks: TeamTask[] = [
+  {
+    id: "budget",
+    label: "Budget and item sourcing",
+    evidence: "Itemised costs, category percentages and reasonableness check.",
+  },
+  {
+    id: "decision",
+    label: "Decision matrix",
+    evidence: "Three options, criteria evidence, trade-offs and final recommendation.",
+  },
+  {
+    id: "science",
+    label: "Product test",
+    evidence: "Question, variables, method, results, graph and conclusion.",
+  },
+  {
+    id: "dignity",
+    label: "Dignity rationale",
+    evidence: "Imago Dei, Common Good or Stewardship linked to the kit.",
+  },
+  {
+    id: "pitch",
+    label: "Proposal and presentation",
+    evidence: "Persuasive proposal, respectful language and final Shopfront pitch.",
+  },
+];
+
+const taskStatusOptions: TeamTaskStatus[] = ["Not started", "In progress", "Evidence ready", "Complete"];
+
+const decisionCriteria: DecisionCriterion[] = [
+  { id: "need", label: "Need", prompt: "How well does this meet a real recipient need?" },
+  { id: "dignity", label: "Dignity", prompt: "How strongly does this protect human dignity?" },
+  { id: "evidence", label: "Evidence", prompt: "How strong is the product or research evidence?" },
+  { id: "cost", label: "Value", prompt: "How well does this use the $100 budget?" },
+  { id: "feasible", label: "Feasible", prompt: "How realistic is this for Shopfront to source and use?" },
+];
+
+const decisionEvidenceLevels: DecisionEvidenceLevel[] = ["Not yet", "Needs checking", "Some evidence", "Strong evidence"];
+
+const engagementSignals: EngagementSignal[] = ["Not yet", "Needs support", "On track", "Strong ownership"];
+
+const engagementTrackers = [
+  {
+    id: "group-focus",
+    label: "Group focus",
+    prompt: "What shows the group was focused, distracted, or able to reset today?",
+  },
+  {
+    id: "group-progress",
+    label: "Group progress",
+    prompt: "What moved forward, what stalled, and what evidence proves it?",
+  },
+  {
+    id: "student-effort",
+    label: "My contribution",
+    prompt: "What did I personally do that helped the project move?",
+  },
+  {
+    id: "student-help",
+    label: "Help-seeking",
+    prompt: "What help did I ask for, offer, or need to use better next time?",
+  },
+];
+
+const projectTimeline: TimelinePhase[] = [
+  {
+    id: "launch",
+    checkpoint: "Start when your team is ready to begin",
+    title: "Team charter and first target",
+    teacherMove: "Guide teams to name how they will collaborate, then let them choose a realistic first target.",
+    studentTool: "Group list, shared target, team norms and task allocation.",
+    artifact: "Team charter and first action list.",
+  },
+  {
+    id: "research",
+    checkpoint: "Use before locking in favourites",
+    title: "Needs research and item sourcing",
+    teacherMove: "Prompt students to check dignity, health, comfort, feasibility and budget before they commit.",
+    studentTool: "Item research, need statement and evidence notes.",
+    artifact: "Sourced item list with reasons.",
+  },
+  {
+    id: "decide",
+    checkpoint: "Use when good options compete",
+    title: "Decision meeting and opportunity cost",
+    teacherMove: "Pause teams for a decision meeting so choices are argued with criteria and evidence.",
+    studentTool: "Critical-thinking record, qualitative evidence judgements and trade-off notes.",
+    artifact: "Recommendation draft with reasons.",
+  },
+  {
+    id: "test",
+    checkpoint: "Use before final evidence claims",
+    title: "Product test and evidence check",
+    teacherMove: "Require a fair-test plan before practical work, then a data-based conclusion before spending is finalised.",
+    studentTool: "Science question, variables, method, results pattern and conclusion.",
+    artifact: "Product test record and graph.",
+  },
+  {
+    id: "draft",
+    checkpoint: "Use when the recommendation is forming",
+    title: "Dignity rationale and proposal draft",
+    teacherMove: "Conference with teams on respectful language, Imago Dei, Common Good or Stewardship, and evidence quality.",
+    studentTool: "Dignity paragraph, persuasive claim and proposal outline.",
+    artifact: "Draft proposal with teacher feedback.",
+  },
+  {
+    id: "pitch",
+    checkpoint: "Use before handing in",
+    title: "Pitch, reflection and portfolio",
+    teacherMove: "Collect final proposals, individual accountability reflections and reporting-attribute evidence.",
+    studentTool: "Final pitch, individual reflection, engagement tracker and capability brag-book entries.",
+    artifact: "Final proposal and capability portfolio.",
+  },
+];
+
+const checkInPrompts = [
+  {
+    id: "standup-1",
+    title: "Start check-in",
+    prompt: "What is our goal for this work session, who owns each task, and what will be finished by the end?",
+  },
+  {
+    id: "standup-2",
+    title: "Progress check-in",
+    prompt: "Who has done what they said, who is stuck, and what evidence do we have so far?",
+  },
+  {
+    id: "standup-3",
+    title: "Adjust-the-plan check-in",
+    prompt: "What changed, what decision do we need to make now, and how will we adjust roles or timing?",
+  },
+];
+
+const criticalThinkingPrompts = [
+  {
+    id: "know",
+    label: "What do we know?",
+    prompt: "Facts, prices, test results, observations or source evidence we can point to.",
+  },
+  {
+    id: "missing",
+    label: "What is missing?",
+    prompt: "Information we still need before we can make a responsible recommendation.",
+  },
+  {
+    id: "tradeoff",
+    label: "What trade-off matters most?",
+    prompt: "The opportunity cost or dignity/value tension that affects our decision.",
+  },
+  {
+    id: "changed",
+    label: "What changed our thinking?",
+    prompt: "Evidence, feedback or a failed assumption that made us revise the plan.",
+  },
+];
+
 const defaultQuantities = starterItems.reduce<Record<string, number>>((acc, item) => {
   acc[item.id] = item.defaultQty;
   return acc;
@@ -721,6 +1079,41 @@ const defaultAuthenticMetrics: AuthenticMetrics = {
   integrityConfirmed: false,
 };
 
+const defaultAttributeLevels = reportingAttributes.reduce<Record<string, ReportingLevel>>((acc, attribute) => {
+  acc[attribute.id] = "Good";
+  return acc;
+}, {});
+
+const defaultTaskOwners = teamTasks.reduce<Record<string, string>>((acc, task) => {
+  acc[task.id] = "";
+  return acc;
+}, {});
+
+const defaultTaskStatuses = teamTasks.reduce<Record<string, TeamTaskStatus>>((acc, task) => {
+  acc[task.id] = "Not started";
+  return acc;
+}, {});
+
+const defaultDecisionOptions = {
+  "option-a": "Balanced dignity kit",
+  "option-b": "Hygiene-first kit",
+  "option-c": "Comfort-ready kit",
+};
+
+const decisionOptionIds = Object.keys(defaultDecisionOptions);
+
+const defaultDecisionEvidence = decisionOptionIds.reduce<Record<string, DecisionEvidenceLevel>>((acc, optionId) => {
+  decisionCriteria.forEach((criterion) => {
+    acc[`${optionId}-${criterion.id}`] = "Not yet";
+  });
+  return acc;
+}, {});
+
+const defaultEngagementSignals = engagementTrackers.reduce<Record<string, EngagementSignal>>((acc, tracker) => {
+  acc[tracker.id] = "Not yet";
+  return acc;
+}, {});
+
 export default function Home() {
   const [quantities, setQuantities] = useState<Record<string, number>>(defaultQuantities);
   const [customItems, setCustomItems] = useState<KitItem[]>([]);
@@ -735,6 +1128,17 @@ export default function Home() {
   const [checkedEvidence, setCheckedEvidence] = useState<Record<string, boolean>>({});
   const [templateResponses, setTemplateResponses] = useState<Record<string, string>>({});
   const [authenticMetrics, setAuthenticMetrics] = useState<AuthenticMetrics>(defaultAuthenticMetrics);
+  const [trackerResponses, setTrackerResponses] = useState<Record<string, string>>({});
+  const [attributeLevels, setAttributeLevels] = useState<Record<string, ReportingLevel>>(defaultAttributeLevels);
+  const [descriptorChecks, setDescriptorChecks] = useState<Record<string, boolean>>({});
+  const [taskOwners, setTaskOwners] = useState<Record<string, string>>(defaultTaskOwners);
+  const [taskStatuses, setTaskStatuses] = useState<Record<string, TeamTaskStatus>>(defaultTaskStatuses);
+  const [decisionOptions, setDecisionOptions] = useState<Record<string, string>>(defaultDecisionOptions);
+  const [decisionEvidence, setDecisionEvidence] =
+    useState<Record<string, DecisionEvidenceLevel>>(defaultDecisionEvidence);
+  const [engagementSignalsState, setEngagementSignalsState] =
+    useState<Record<string, EngagementSignal>>(defaultEngagementSignals);
+  const [timelineChecks, setTimelineChecks] = useState<Record<string, boolean>>({});
   const [copied, setCopied] = useState(false);
   const storageReady = useRef(false);
 
@@ -751,6 +1155,15 @@ export default function Home() {
           checkedEvidence?: Record<string, boolean>;
           templateResponses?: Record<string, string>;
           authenticMetrics?: AuthenticMetrics;
+          trackerResponses?: Record<string, string>;
+          attributeLevels?: Record<string, ReportingLevel>;
+          descriptorChecks?: Record<string, boolean>;
+          taskOwners?: Record<string, string>;
+          taskStatuses?: Record<string, TeamTaskStatus>;
+          decisionOptions?: Record<string, string>;
+          decisionEvidence?: Record<string, DecisionEvidenceLevel>;
+          engagementSignalsState?: Record<string, EngagementSignal>;
+          timelineChecks?: Record<string, boolean>;
         };
         setQuantities({ ...defaultQuantities, ...(parsed.quantities ?? {}) });
         setCustomItems(parsed.customItems ?? []);
@@ -760,6 +1173,15 @@ export default function Home() {
         setCheckedEvidence(parsed.checkedEvidence ?? {});
         setTemplateResponses(parsed.templateResponses ?? {});
         setAuthenticMetrics({ ...defaultAuthenticMetrics, ...(parsed.authenticMetrics ?? {}) });
+        setTrackerResponses(parsed.trackerResponses ?? {});
+        setAttributeLevels({ ...defaultAttributeLevels, ...(parsed.attributeLevels ?? {}) });
+        setDescriptorChecks(parsed.descriptorChecks ?? {});
+        setTaskOwners({ ...defaultTaskOwners, ...(parsed.taskOwners ?? {}) });
+        setTaskStatuses({ ...defaultTaskStatuses, ...(parsed.taskStatuses ?? {}) });
+        setDecisionOptions({ ...defaultDecisionOptions, ...(parsed.decisionOptions ?? {}) });
+        setDecisionEvidence({ ...defaultDecisionEvidence, ...(parsed.decisionEvidence ?? {}) });
+        setEngagementSignalsState({ ...defaultEngagementSignals, ...(parsed.engagementSignalsState ?? {}) });
+        setTimelineChecks(parsed.timelineChecks ?? {});
       } catch {
         window.localStorage.removeItem(STORAGE_KEY);
       }
@@ -780,9 +1202,36 @@ export default function Home() {
         checkedEvidence,
         templateResponses,
         authenticMetrics,
+        trackerResponses,
+        attributeLevels,
+        descriptorChecks,
+        taskOwners,
+        taskStatuses,
+        decisionOptions,
+        decisionEvidence,
+        engagementSignalsState,
+        timelineChecks,
       }),
     );
-  }, [activeLensId, authenticMetrics, checkedEvidence, customItems, notes, quantities, selectedStrategyId, templateResponses]);
+  }, [
+    activeLensId,
+    attributeLevels,
+    authenticMetrics,
+    checkedEvidence,
+    customItems,
+    descriptorChecks,
+    decisionEvidence,
+    decisionOptions,
+    engagementSignalsState,
+    notes,
+    quantities,
+    selectedStrategyId,
+    taskOwners,
+    taskStatuses,
+    templateResponses,
+    timelineChecks,
+    trackerResponses,
+  ]);
 
   const allItems = useMemo(() => [...starterItems, ...customItems], [customItems]);
   const selectedLens = lenses.find((lens) => lens.id === activeLensId) ?? lenses[0];
@@ -823,6 +1272,33 @@ export default function Home() {
   const writingMinutes = authenticMetrics.startedAt
     ? Math.max(1, Math.round((Date.now() - authenticMetrics.startedAt) / 60000))
     : 0;
+  const attributeEvidence = reportingAttributes.map((attribute) => {
+    const level = attributeLevels[attribute.id] ?? "Good";
+    const descriptors = attribute.descriptors[level];
+    const checkedDescriptors = descriptors.filter((_, index) => descriptorChecks[`${attribute.id}-${level}-${index}`]);
+    return { attribute, level, descriptors, checkedCount: checkedDescriptors.length };
+  });
+  const reportingReadyCount = attributeEvidence.filter((row) => row.checkedCount >= 3).length;
+  const teamTasksReady = teamTasks.filter((task) => ["Evidence ready", "Complete"].includes(taskStatuses[task.id])).length;
+  const timelineReadyCount = projectTimeline.filter((phase) => timelineChecks[phase.id]).length;
+  const decisionHasEvidence = decisionOptionIds.some((optionId) =>
+    decisionCriteria.some((criterion) => {
+      const level = decisionEvidence[`${optionId}-${criterion.id}`] ?? "Not yet";
+      return level === "Some evidence" || level === "Strong evidence";
+    }),
+  );
+  const engagementHasReflection = engagementTrackers.some(
+    (tracker) =>
+      (engagementSignalsState[tracker.id] ?? "Not yet") !== "Not yet" ||
+      wordCount(trackerResponses[`engagement-${tracker.id}`] ?? "") >= 8,
+  );
+  const portfolioCompleteCount = reportingAttributes.filter((attribute) => {
+    return (
+      wordCount(trackerResponses[`portfolio-${attribute.id}-can`] ?? "") >= 8 &&
+      wordCount(trackerResponses[`portfolio-${attribute.id}-evidence`] ?? "") >= 10 &&
+      wordCount(trackerResponses[`portfolio-${attribute.id}-next`] ?? "") >= 6
+    );
+  }).length;
 
   const categoryTotals = categories.map((category) => {
     const amount = selectedItems
@@ -871,6 +1347,12 @@ export default function Home() {
       `Required submissions: ${assessmentDeliverables.join(" ")}`,
       `Online template: group component ${completedGroupFields.length}/${groupTemplateFields.length} checkpoints complete; individual component ${completedIndividualFields.length}/${individualTemplateFields.length} checkpoints complete.`,
       `Authentic entry log: ${authenticMetrics.keystrokes} typed keystrokes, ${integrityFlags} paste/drop or large-insert flags, ${writingMinutes} minute writing window.`,
+      "Capability process: flexible checkpoints help students set their own pace, targets and accountabilities without over-prescribing the project.",
+      `Teamwork tracker: ${teamTasksReady > 0 ? "owners, target dates and progress evidence are being recorded." : "ready for teams to allocate roles, dates and check-in evidence."}`,
+      `Critical-thinking tool: ${decisionHasEvidence ? "students have started qualitative evidence judgements for their options." : "ready for students to compare options using evidence, dignity, value and feasibility."}`,
+      `Engagement tracker: ${engagementHasReflection ? "group and individual reflection evidence has started." : "ready for students to record focus, contribution, support and next targets."}`,
+      `Reporting attributes: ${reportingReadyCount > 0 ? "descriptor evidence is being collected for teacher judgement." : "qualitative descriptors are ready for evidence-based teacher judgement."}`,
+      `Capability portfolio: ${portfolioCompleteCount > 0 ? "students are building brag-book reflections about growth, evidence and next steps." : "each student can build a brag-book portfolio from project evidence."}`,
       "Marking scale: 3 Secure, 2 Developing, 1 Emerging, 0 Not demonstrated across VALUE, CHOICE, EVIDENCE, VOICE and DIGNITY.",
     ].join("\n");
   }, [
@@ -881,10 +1363,15 @@ export default function Home() {
     groupTemplateFields.length,
     individualTemplateFields.length,
     integrityFlags,
+    decisionHasEvidence,
+    engagementHasReflection,
     notes,
+    portfolioCompleteCount,
     remaining,
+    reportingReadyCount,
     selectedItems,
     selectedStrategy,
+    teamTasksReady,
     total,
     writingMinutes,
   ]);
@@ -927,6 +1414,15 @@ export default function Home() {
     setCheckedEvidence({});
     setTemplateResponses({});
     setAuthenticMetrics(defaultAuthenticMetrics);
+    setTrackerResponses({});
+    setAttributeLevels(defaultAttributeLevels);
+    setDescriptorChecks({});
+    setTaskOwners(defaultTaskOwners);
+    setTaskStatuses(defaultTaskStatuses);
+    setDecisionOptions(defaultDecisionOptions);
+    setDecisionEvidence(defaultDecisionEvidence);
+    setEngagementSignalsState(defaultEngagementSignals);
+    setTimelineChecks({});
     setCopied(false);
     window.localStorage.removeItem(STORAGE_KEY);
   }
@@ -963,6 +1459,20 @@ export default function Home() {
     setTemplateResponses((current) => ({ ...current, [id]: nextValue }));
   }
 
+  function changeTrackerResponse(id: string, nextValue: string) {
+    const previousValue = trackerResponses[id] ?? "";
+    const insertedCharacters = nextValue.length - previousValue.length;
+
+    startAuthenticLog();
+
+    if (insertedCharacters > 18) {
+      noteAuthenticMetric("rejectedBursts");
+      return;
+    }
+
+    setTrackerResponses((current) => ({ ...current, [id]: nextValue }));
+  }
+
   function blockTemplatePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
     event.preventDefault();
     noteAuthenticMetric("blockedPastes");
@@ -991,13 +1501,39 @@ export default function Home() {
 
   function clearStudentTemplate() {
     setTemplateResponses({});
+    setTrackerResponses({});
+    setDescriptorChecks({});
+    setTaskOwners(defaultTaskOwners);
+    setTaskStatuses(defaultTaskStatuses);
+    setDecisionOptions(defaultDecisionOptions);
+    setDecisionEvidence(defaultDecisionEvidence);
+    setEngagementSignalsState(defaultEngagementSignals);
+    setTimelineChecks({});
     setAuthenticMetrics(defaultAuthenticMetrics);
+  }
+
+  function renderTrackedTextarea(id: string, placeholder: string, rows = 4) {
+    return (
+      <textarea
+        autoComplete="off"
+        onBeforeInput={checkBeforeInput}
+        onChange={(event) => changeTrackerResponse(id, event.target.value)}
+        onDrop={blockTemplateDrop}
+        onKeyDown={countTemplateKey}
+        onPaste={blockTemplatePaste}
+        placeholder={placeholder}
+        rows={rows}
+        spellCheck={true}
+        value={trackerResponses[id] ?? ""}
+      />
+    );
   }
 
   return (
     <main className="app-shell">
       <aside className="side-nav" aria-label="App sections">
         <a href="#builder">Builder</a>
+        <a href="#process">Process</a>
         <a href="#evidence">Evidence</a>
         <a href="#curriculum">Curriculum</a>
         <a href="#assessment">Assessment</a>
@@ -1011,8 +1547,8 @@ export default function Home() {
             <p className="eyebrow">Shopfront Year 8</p>
             <h1>$100 Human Dignity Kit Builder</h1>
             <p className="topbar-intro">
-              The $100 Human Dignity Kit Challenge as a working staff proposal, student task model and
-              assessment evidence map.
+              The $100 Human Dignity Kit Challenge as a timeline-guided student project, assessment evidence
+              map and capability portfolio.
             </p>
           </div>
           <div className="topbar-actions">
@@ -1135,6 +1671,390 @@ export default function Home() {
               ))}
             </div>
           </aside>
+        </section>
+
+        <section className="process-section" id="process">
+          <div className="section-title">
+            <div>
+              <p className="eyebrow">Capability process tools</p>
+              <h2>Self-paced targets, accountability and learning artifacts</h2>
+            </div>
+            <span className="health-chip">{timelineReadyCount > 0 ? "Evidence trail started" : "Student-paced guide"}</span>
+          </div>
+
+          <div className="process-principle">
+            <article>
+              <p className="eyebrow">Student pace</p>
+              <h3>Teams choose the next checkpoint when they are ready.</h3>
+              <p>Teachers can prompt quality and accountability without turning the project into a fixed lesson sequence.</p>
+            </article>
+            <article>
+              <p className="eyebrow">Visible process</p>
+              <h3>Students leave artifacts as they work.</h3>
+              <p>Goals, check-ins, adjustments and reflections become evidence for collaboration, engagement and growth.</p>
+            </article>
+            <article>
+              <p className="eyebrow">Qualitative judgement</p>
+              <h3>Capabilities are described, not scored.</h3>
+              <p>Students select descriptors only when they can point to behaviour, evidence or a reflection that backs it up.</p>
+            </article>
+          </div>
+
+          <div className="milestone-grid" aria-label="Flexible project checkpoints">
+            {projectTimeline.map((phase) => (
+              <label className={timelineChecks[phase.id] ? "milestone-card complete" : "milestone-card"} key={phase.id}>
+                <input
+                  type="checkbox"
+                  checked={Boolean(timelineChecks[phase.id])}
+                  onChange={(event) =>
+                    setTimelineChecks((current) => ({
+                      ...current,
+                      [phase.id]: event.target.checked,
+                    }))
+                  }
+                />
+                <span>{phase.checkpoint}</span>
+                <h3>{phase.title}</h3>
+                <p>{phase.teacherMove}</p>
+                <strong>{phase.studentTool}</strong>
+                <small>{phase.artifact}</small>
+              </label>
+            ))}
+          </div>
+
+          <article className="tool-panel" aria-label="Team working document">
+            <div className="tool-heading">
+              <div>
+                <p className="eyebrow">Collaboration tool</p>
+                <h3>Team working document</h3>
+              </div>
+              <span className="soft-chip">Goals, roles, check-ins, adjustments</span>
+            </div>
+            <div className="reflection-grid">
+              <label className="reflection-field">
+                Who is in our group?
+                {renderTrackedTextarea("team-members", "Type each group member's name and what strength they bring.", 3)}
+              </label>
+              <label className="reflection-field">
+                What is our next target?
+                {renderTrackedTextarea("team-target", "What will we try to finish next, and what will count as done?", 3)}
+              </label>
+              <label className="reflection-field">
+                What behaviours will help us work well?
+                {renderTrackedTextarea("team-norms", "Name the collaboration habits your team agrees to use.", 3)}
+              </label>
+              <label className="reflection-field">
+                What might get in the way?
+                {renderTrackedTextarea("team-risk", "Name a likely blocker and how your team will respond.", 3)}
+              </label>
+            </div>
+
+            <div className="team-task-list">
+              {teamTasks.map((task) => (
+                <div className="team-task-row" key={task.id}>
+                  <div>
+                    <h4>{task.label}</h4>
+                    <p>{task.evidence}</p>
+                  </div>
+                  <label>
+                    Owner
+                    <input
+                      type="text"
+                      value={taskOwners[task.id] ?? ""}
+                      onChange={(event) =>
+                        setTaskOwners((current) => ({
+                          ...current,
+                          [task.id]: event.target.value,
+                        }))
+                      }
+                      placeholder="Name"
+                    />
+                  </label>
+                  <label>
+                    By when
+                    <input
+                      type="text"
+                      value={trackerResponses[`task-${task.id}-due`] ?? ""}
+                      onChange={(event) => changeTrackerResponse(`task-${task.id}-due`, event.target.value)}
+                      placeholder="Date or checkpoint"
+                    />
+                  </label>
+                  <label>
+                    Progress
+                    <select
+                      value={taskStatuses[task.id] ?? "Not started"}
+                      onChange={(event) =>
+                        setTaskStatuses((current) => ({
+                          ...current,
+                          [task.id]: event.target.value as TeamTaskStatus,
+                        }))
+                      }
+                    >
+                      {taskStatusOptions.map((status) => (
+                        <option key={status}>{status}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="task-evidence">
+                    Evidence note
+                    {renderTrackedTextarea(`task-${task.id}-evidence`, "What proves this has moved forward?", 3)}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="tool-panel" aria-label="Critical thinking record">
+            <div className="tool-heading">
+              <div>
+                <p className="eyebrow">Critical thinking tool</p>
+                <h3>Decision making and analysis record</h3>
+              </div>
+              <span className="soft-chip">Evidence, trade-offs, changed thinking</span>
+            </div>
+            <div className="option-grid">
+              {decisionOptionIds.map((optionId, index) => (
+                <label key={optionId}>
+                  Option {String.fromCharCode(65 + index)}
+                  <input
+                    type="text"
+                    value={decisionOptions[optionId] ?? ""}
+                    onChange={(event) =>
+                      setDecisionOptions((current) => ({
+                        ...current,
+                        [optionId]: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              ))}
+            </div>
+
+            <div className="decision-table" role="region" aria-label="Qualitative decision matrix" tabIndex={0}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Criterion</th>
+                    {decisionOptionIds.map((optionId, index) => (
+                      <th key={optionId}>{decisionOptions[optionId] || `Option ${String.fromCharCode(65 + index)}`}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {decisionCriteria.map((criterion) => (
+                    <tr key={criterion.id}>
+                      <td>
+                        <strong>{criterion.label}</strong>
+                        <span>{criterion.prompt}</span>
+                      </td>
+                      {decisionOptionIds.map((optionId) => (
+                        <td key={`${optionId}-${criterion.id}`}>
+                          <select
+                            className="qualitative-select"
+                            value={decisionEvidence[`${optionId}-${criterion.id}`] ?? "Not yet"}
+                            onChange={(event) =>
+                              setDecisionEvidence((current) => ({
+                                ...current,
+                                [`${optionId}-${criterion.id}`]: event.target.value as DecisionEvidenceLevel,
+                              }))
+                            }
+                          >
+                            {decisionEvidenceLevels.map((level) => (
+                              <option key={level}>{level}</option>
+                            ))}
+                          </select>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="reflection-grid">
+              {criticalThinkingPrompts.map((prompt) => (
+                <label className="reflection-field" key={prompt.id}>
+                  {prompt.label}
+                  {renderTrackedTextarea(`thinking-${prompt.id}`, prompt.prompt, 3)}
+                </label>
+              ))}
+              <label className="reflection-field wide">
+                Current recommendation
+                {renderTrackedTextarea(
+                  "decision-current-choice",
+                  "Which option is strongest right now, and what evidence or value judgement makes you think that?",
+                  3,
+                )}
+              </label>
+            </div>
+          </article>
+
+          <div className="process-tools-grid">
+            <article className="tool-panel" aria-label="Progress check-in record">
+              <div className="tool-heading">
+                <div>
+                  <p className="eyebrow">Progress tool</p>
+                  <h3>Check-in meetings</h3>
+                </div>
+                <span className="soft-chip">Accountability without micromanaging</span>
+              </div>
+              <div className="reflection-grid single">
+                {checkInPrompts.map((prompt) => (
+                  <label className="reflection-field" key={prompt.id}>
+                    {prompt.title}
+                    {renderTrackedTextarea(`checkin-${prompt.id}`, prompt.prompt, 4)}
+                  </label>
+                ))}
+              </div>
+            </article>
+
+            <article className="tool-panel" aria-label="Engagement check-in">
+              <div className="tool-heading">
+                <div>
+                  <p className="eyebrow">Engagement tool</p>
+                  <h3>Group and individual check-in</h3>
+                </div>
+                <span className="soft-chip">Focus, effort, support, next target</span>
+              </div>
+              <div className="engagement-grid">
+                {engagementTrackers.map((tracker) => (
+                  <div className="engagement-row" key={tracker.id}>
+                    <label>
+                      {tracker.label}
+                      <select
+                        value={engagementSignalsState[tracker.id] ?? "Not yet"}
+                        onChange={(event) =>
+                          setEngagementSignalsState((current) => ({
+                            ...current,
+                            [tracker.id]: event.target.value as EngagementSignal,
+                          }))
+                        }
+                      >
+                        {engagementSignals.map((signal) => (
+                          <option key={signal}>{signal}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="reflection-field">
+                      Evidence
+                      {renderTrackedTextarea(`engagement-${tracker.id}`, tracker.prompt, 3)}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </div>
+
+          <article className="tool-panel" aria-label="Reporting attributes evidence">
+            <div className="tool-heading">
+              <div>
+                <p className="eyebrow">Reporting attributes</p>
+                <h3>Qualitative evidence for teacher judgement</h3>
+              </div>
+              <span className="soft-chip">At least 3 descriptors need evidence for a rating</span>
+            </div>
+            <div className="reporting-attribute-grid">
+              {attributeEvidence.map(({ attribute, level, descriptors, checkedCount }) => (
+                <article className="attribute-card" key={attribute.id}>
+                  <div className="attribute-card-header">
+                    <span>{attribute.shortName}</span>
+                    <select
+                      value={level}
+                      onChange={(event) =>
+                        setAttributeLevels((current) => ({
+                          ...current,
+                          [attribute.id]: event.target.value as ReportingLevel,
+                        }))
+                      }
+                    >
+                      {reportingLevels.map((reportingLevel) => (
+                        <option key={reportingLevel}>{reportingLevel}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <h3>{attribute.title}</h3>
+                  <p>{attribute.description}</p>
+                  <ul className="descriptor-list">
+                    {descriptors.map((descriptor, index) => {
+                      const descriptorId = `${attribute.id}-${level}-${index}`;
+                      return (
+                        <li key={descriptorId}>
+                          <label>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(descriptorChecks[descriptorId])}
+                              onChange={(event) =>
+                                setDescriptorChecks((current) => ({
+                                  ...current,
+                                  [descriptorId]: event.target.checked,
+                                }))
+                              }
+                            />
+                            <span>{descriptor}</span>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <p className={checkedCount >= 3 ? "descriptor-status ready" : "descriptor-status"}>
+                    {checkedCount >= 3
+                      ? "Descriptor evidence is ready for teacher review."
+                      : "Select descriptors only when there is visible evidence."}
+                  </p>
+                  <label className="reflection-field">
+                    Evidence note
+                    {renderTrackedTextarea(
+                      `attribute-${attribute.id}-evidence`,
+                      "Describe the behaviour, decision or reflection that supports this descriptor choice.",
+                      3,
+                    )}
+                  </label>
+                </article>
+              ))}
+            </div>
+          </article>
+
+          <article className="tool-panel" aria-label="Capability brag book portfolio">
+            <div className="tool-heading">
+              <div>
+                <p className="eyebrow">Individual portfolio</p>
+                <h3>Capability brag book</h3>
+              </div>
+              <span className="soft-chip">I can, evidence, next stretch</span>
+            </div>
+            <div className="portfolio-grid">
+              {reportingAttributes.map((attribute) => (
+                <article className="portfolio-card" key={attribute.id}>
+                  <span>{attribute.shortName}</span>
+                  <h3>{attribute.title}</h3>
+                  <label className="reflection-field">
+                    I can now...
+                    {renderTrackedTextarea(
+                      `portfolio-${attribute.id}-can`,
+                      "Name a capability you can now show more confidently.",
+                      3,
+                    )}
+                  </label>
+                  <label className="reflection-field">
+                    Evidence from this project
+                    {renderTrackedTextarea(
+                      `portfolio-${attribute.id}-evidence`,
+                      "Point to a task, decision, check-in, peer moment or piece of work that proves it.",
+                      3,
+                    )}
+                  </label>
+                  <label className="reflection-field">
+                    My next stretch
+                    {renderTrackedTextarea(
+                      `portfolio-${attribute.id}-next`,
+                      "What would you work on next to keep developing this capability?",
+                      3,
+                    )}
+                  </label>
+                </article>
+              ))}
+            </div>
+          </article>
         </section>
 
         <section className="evidence-layout" id="evidence">
