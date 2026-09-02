@@ -1,5 +1,6 @@
 "use client";
 
+import type { ClipboardEvent, DragEvent, FormEvent, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type Category = "Hygiene" | "Health" | "Comfort" | "Food" | "Connection";
@@ -50,6 +51,25 @@ type AssessmentCriterion = {
   developing: string;
   emerging: string;
   missing: string;
+};
+
+type TemplateSection = "Group" | "Individual";
+
+type TemplateField = {
+  id: string;
+  section: TemplateSection;
+  label: string;
+  guide: string;
+  minWords: number;
+};
+
+type AuthenticMetrics = {
+  blockedPastes: number;
+  blockedDrops: number;
+  rejectedBursts: number;
+  keystrokes: number;
+  startedAt: number | null;
+  integrityConfirmed: boolean;
 };
 
 const STORAGE_KEY = "shopfront-dignity-kit-builder-v1";
@@ -597,6 +617,86 @@ const clueLevels = [
   },
 ];
 
+const templateFields: TemplateField[] = [
+  {
+    id: "group-team",
+    section: "Group",
+    label: "Team members and roles",
+    guide: "Name each student and the role they actually took: budget lead, evidence lead, dignity lead, proposal lead or another clear role.",
+    minWords: 20,
+  },
+  {
+    id: "group-need",
+    section: "Group",
+    label: "Need and design priorities",
+    guide: "Describe the person or situation your kit is designed for, then name the three needs your team chose to prioritise.",
+    minWords: 45,
+  },
+  {
+    id: "group-budget",
+    section: "Group",
+    label: "Budget evidence",
+    guide: "Explain your total cost, remaining balance, one category percentage and one reasonableness check that proves the numbers work.",
+    minWords: 55,
+  },
+  {
+    id: "group-choice",
+    section: "Group",
+    label: "Decision matrix summary",
+    guide: "Compare three possible kit options. Include one benefit, one cost and one opportunity cost for each option before naming your chosen kit.",
+    minWords: 70,
+  },
+  {
+    id: "group-science",
+    section: "Group",
+    label: "Product test record",
+    guide: "Record the product claim you tested, your question, prediction, variables, method, results pattern and evidence-based conclusion.",
+    minWords: 80,
+  },
+  {
+    id: "group-proposal",
+    section: "Group",
+    label: "Final Shopfront recommendation",
+    guide: "Write the group's final recommendation to Shopfront. It must use evidence from the budget, choices, product test and dignity rationale.",
+    minWords: 95,
+  },
+  {
+    id: "individual-name",
+    section: "Individual",
+    label: "Student name and personal role",
+    guide: "Write your name and explain what you personally contributed to the group work. Name at least one specific task you completed.",
+    minWords: 35,
+  },
+  {
+    id: "individual-evidence",
+    section: "Individual",
+    label: "Evidence I can defend",
+    guide: "Choose one piece of evidence from your project and explain why it is trustworthy enough to use in the final recommendation.",
+    minWords: 60,
+  },
+  {
+    id: "individual-tradeoff",
+    section: "Individual",
+    label: "Choice and trade-off reflection",
+    guide: "Explain one item or option you supported, rejected or changed your mind about. Use opportunity cost or value in your explanation.",
+    minWords: 60,
+  },
+  {
+    id: "individual-dignity",
+    section: "Individual",
+    label: "Human dignity reflection",
+    guide: "Explain how the final kit honours human dignity. Use Imago Dei and either Common Good or Stewardship accurately.",
+    minWords: 75,
+  },
+  {
+    id: "individual-learning",
+    section: "Individual",
+    label: "What changed in my thinking",
+    guide: "Describe what you understand differently now about budgeting, homelessness, evidence, persuasion or dignity.",
+    minWords: 45,
+  },
+];
+
 const defaultQuantities = starterItems.reduce<Record<string, number>>((acc, item) => {
   acc[item.id] = item.defaultQty;
   return acc;
@@ -612,6 +712,15 @@ const defaultNotes: Notes = {
     "Shopfront should adopt this kit because it uses a small budget carefully while still treating the recipient as a person with inherent dignity.",
 };
 
+const defaultAuthenticMetrics: AuthenticMetrics = {
+  blockedPastes: 0,
+  blockedDrops: 0,
+  rejectedBursts: 0,
+  keystrokes: 0,
+  startedAt: null,
+  integrityConfirmed: false,
+};
+
 export default function Home() {
   const [quantities, setQuantities] = useState<Record<string, number>>(defaultQuantities);
   const [customItems, setCustomItems] = useState<KitItem[]>([]);
@@ -624,6 +733,8 @@ export default function Home() {
   const [selectedStrategyId, setSelectedStrategyId] = useState("balanced");
   const [notes, setNotes] = useState<Notes>(defaultNotes);
   const [checkedEvidence, setCheckedEvidence] = useState<Record<string, boolean>>({});
+  const [templateResponses, setTemplateResponses] = useState<Record<string, string>>({});
+  const [authenticMetrics, setAuthenticMetrics] = useState<AuthenticMetrics>(defaultAuthenticMetrics);
   const [copied, setCopied] = useState(false);
   const storageReady = useRef(false);
 
@@ -638,6 +749,8 @@ export default function Home() {
           activeLensId?: string;
           notes?: Notes;
           checkedEvidence?: Record<string, boolean>;
+          templateResponses?: Record<string, string>;
+          authenticMetrics?: AuthenticMetrics;
         };
         setQuantities({ ...defaultQuantities, ...(parsed.quantities ?? {}) });
         setCustomItems(parsed.customItems ?? []);
@@ -645,6 +758,8 @@ export default function Home() {
         setActiveLensId(parsed.activeLensId ?? "value");
         setNotes({ ...defaultNotes, ...(parsed.notes ?? {}) });
         setCheckedEvidence(parsed.checkedEvidence ?? {});
+        setTemplateResponses(parsed.templateResponses ?? {});
+        setAuthenticMetrics({ ...defaultAuthenticMetrics, ...(parsed.authenticMetrics ?? {}) });
       } catch {
         window.localStorage.removeItem(STORAGE_KEY);
       }
@@ -663,9 +778,11 @@ export default function Home() {
         activeLensId,
         notes,
         checkedEvidence,
+        templateResponses,
+        authenticMetrics,
       }),
     );
-  }, [activeLensId, checkedEvidence, customItems, notes, quantities, selectedStrategyId]);
+  }, [activeLensId, authenticMetrics, checkedEvidence, customItems, notes, quantities, selectedStrategyId, templateResponses]);
 
   const allItems = useMemo(() => [...starterItems, ...customItems], [customItems]);
   const selectedLens = lenses.find((lens) => lens.id === activeLensId) ?? lenses[0];
@@ -690,6 +807,22 @@ export default function Home() {
       3 *
       100,
   );
+  const completedTemplateFields = templateFields.filter(
+    (field) => wordCount(templateResponses[field.id] ?? "") >= field.minWords,
+  );
+  const groupTemplateFields = templateFields.filter((field) => field.section === "Group");
+  const individualTemplateFields = templateFields.filter((field) => field.section === "Individual");
+  const completedGroupFields = groupTemplateFields.filter(
+    (field) => wordCount(templateResponses[field.id] ?? "") >= field.minWords,
+  );
+  const completedIndividualFields = individualTemplateFields.filter(
+    (field) => wordCount(templateResponses[field.id] ?? "") >= field.minWords,
+  );
+  const integrityFlags =
+    authenticMetrics.blockedPastes + authenticMetrics.blockedDrops + authenticMetrics.rejectedBursts;
+  const writingMinutes = authenticMetrics.startedAt
+    ? Math.max(1, Math.round((Date.now() - authenticMetrics.startedAt) / 60000))
+    : 0;
 
   const categoryTotals = categories.map((category) => {
     const amount = selectedItems
@@ -736,9 +869,25 @@ export default function Home() {
       "",
       "Assessment task: Teams recommend a dignity kit for Shopfront using a $100 budget constraint.",
       `Required submissions: ${assessmentDeliverables.join(" ")}`,
+      `Online template: group component ${completedGroupFields.length}/${groupTemplateFields.length} checkpoints complete; individual component ${completedIndividualFields.length}/${individualTemplateFields.length} checkpoints complete.`,
+      `Authentic entry log: ${authenticMetrics.keystrokes} typed keystrokes, ${integrityFlags} paste/drop or large-insert flags, ${writingMinutes} minute writing window.`,
       "Marking scale: 3 Secure, 2 Developing, 1 Emerging, 0 Not demonstrated across VALUE, CHOICE, EVIDENCE, VOICE and DIGNITY.",
     ].join("\n");
-  }, [categoryTotals, notes, remaining, selectedItems, selectedStrategy, total]);
+  }, [
+    authenticMetrics.keystrokes,
+    categoryTotals,
+    completedGroupFields.length,
+    completedIndividualFields.length,
+    groupTemplateFields.length,
+    individualTemplateFields.length,
+    integrityFlags,
+    notes,
+    remaining,
+    selectedItems,
+    selectedStrategy,
+    total,
+    writingMinutes,
+  ]);
 
   function changeQuantity(id: string, delta: number) {
     setQuantities((current) => ({
@@ -776,6 +925,8 @@ export default function Home() {
     setActiveLensId("value");
     setNotes(defaultNotes);
     setCheckedEvidence({});
+    setTemplateResponses({});
+    setAuthenticMetrics(defaultAuthenticMetrics);
     setCopied(false);
     window.localStorage.removeItem(STORAGE_KEY);
   }
@@ -786,6 +937,63 @@ export default function Home() {
     window.setTimeout(() => setCopied(false), 1800);
   }
 
+  function startAuthenticLog() {
+    setAuthenticMetrics((current) => (current.startedAt ? current : { ...current, startedAt: Date.now() }));
+  }
+
+  function noteAuthenticMetric(metric: "blockedPastes" | "blockedDrops" | "rejectedBursts" | "keystrokes") {
+    setAuthenticMetrics((current) => ({
+      ...current,
+      startedAt: current.startedAt ?? Date.now(),
+      [metric]: current[metric] + 1,
+    }));
+  }
+
+  function changeTemplateResponse(id: string, nextValue: string) {
+    const previousValue = templateResponses[id] ?? "";
+    const insertedCharacters = nextValue.length - previousValue.length;
+
+    startAuthenticLog();
+
+    if (insertedCharacters > 18) {
+      noteAuthenticMetric("rejectedBursts");
+      return;
+    }
+
+    setTemplateResponses((current) => ({ ...current, [id]: nextValue }));
+  }
+
+  function blockTemplatePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    event.preventDefault();
+    noteAuthenticMetric("blockedPastes");
+  }
+
+  function blockTemplateDrop(event: DragEvent<HTMLTextAreaElement>) {
+    event.preventDefault();
+    noteAuthenticMetric("blockedDrops");
+  }
+
+  function checkBeforeInput(event: FormEvent<HTMLTextAreaElement>) {
+    const nativeEvent = event.nativeEvent as InputEvent;
+    if (nativeEvent.inputType === "insertFromPaste" || nativeEvent.inputType === "insertFromDrop") {
+      event.preventDefault();
+      if (nativeEvent.inputType === "insertFromPaste") noteAuthenticMetric("blockedPastes");
+      if (nativeEvent.inputType === "insertFromDrop") noteAuthenticMetric("blockedDrops");
+    }
+  }
+
+  function countTemplateKey(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if (event.key.length === 1 || event.key === "Backspace" || event.key === "Delete" || event.key === "Enter") {
+      noteAuthenticMetric("keystrokes");
+    }
+  }
+
+  function clearStudentTemplate() {
+    setTemplateResponses({});
+    setAuthenticMetrics(defaultAuthenticMetrics);
+  }
+
   return (
     <main className="app-shell">
       <aside className="side-nav" aria-label="App sections">
@@ -793,6 +1001,7 @@ export default function Home() {
         <a href="#evidence">Evidence</a>
         <a href="#curriculum">Curriculum</a>
         <a href="#assessment">Assessment</a>
+        <a href="#template">Template</a>
         <a href="#summary">Summary</a>
       </aside>
 
@@ -1187,6 +1396,141 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="template-section" id="template">
+          <div className="section-title">
+            <div>
+              <p className="eyebrow">Online guided template</p>
+              <h2>Student workspace with group and individual evidence</h2>
+            </div>
+            <span className={integrityFlags === 0 ? "health-chip good" : "health-chip alert"}>
+              {completedTemplateFields.length}/{templateFields.length} checkpoints
+            </span>
+          </div>
+
+          <div className="template-mode-grid">
+            <article>
+              <p className="eyebrow">Group component</p>
+              <h3>Shared project evidence</h3>
+              <p>
+                One team submission records the kit design, budget proof, decision matrix, product test
+                and final Shopfront recommendation.
+              </p>
+              <strong>
+                {completedGroupFields.length}/{groupTemplateFields.length} group checkpoints complete
+              </strong>
+            </article>
+            <article>
+              <p className="eyebrow">Individual component</p>
+              <h3>Personal accountability</h3>
+              <p>
+                Each student completes their own reflection so the teacher can see personal contribution,
+                evidence understanding and dignity reasoning.
+              </p>
+              <strong>
+                {completedIndividualFields.length}/{individualTemplateFields.length} individual checkpoints complete
+              </strong>
+            </article>
+          </div>
+
+          <div className="integrity-panel">
+            <div>
+              <p className="eyebrow">AI copy-paste guard</p>
+              <h3>Typed-only response fields</h3>
+              <p>
+                Student writing boxes block paste, block drag-drop text and reject sudden large text
+                insertions. This creates process evidence for teacher review; it is not a perfect AI detector.
+              </p>
+            </div>
+            <div className="integrity-metrics" aria-label="Authentic entry log">
+              <div>
+                <span>{authenticMetrics.keystrokes}</span>
+                <p>typed keys</p>
+              </div>
+              <div>
+                <span>{authenticMetrics.blockedPastes}</span>
+                <p>pastes blocked</p>
+              </div>
+              <div>
+                <span>{authenticMetrics.blockedDrops + authenticMetrics.rejectedBursts}</span>
+                <p>insert flags</p>
+              </div>
+              <div>
+                <span>{writingMinutes}</span>
+                <p>minutes</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="template-actions">
+            <label className="declaration-row">
+              <input
+                type="checkbox"
+                checked={authenticMetrics.integrityConfirmed}
+                onChange={(event) =>
+                  setAuthenticMetrics((current) => ({
+                    ...current,
+                    integrityConfirmed: event.target.checked,
+                    startedAt: current.startedAt ?? Date.now(),
+                  }))
+                }
+              />
+              <span>
+                I confirm these responses were typed by me in this workspace and I can explain them to my
+                teacher.
+              </span>
+            </label>
+            <div>
+              <button type="button" onClick={() => window.print()}>
+                Print student template
+              </button>
+              <button type="button" onClick={clearStudentTemplate}>
+                Clear template
+              </button>
+            </div>
+          </div>
+
+          {(["Group", "Individual"] as TemplateSection[]).map((section) => {
+            const fields = templateFields.filter((field) => field.section === section);
+            return (
+              <div className="template-panel" key={section}>
+                <div className="template-panel-heading">
+                  <p className="eyebrow">{section} component</p>
+                  <h3>{section === "Group" ? "Team evidence" : "Personal evidence"}</h3>
+                </div>
+                <div className="template-field-grid">
+                  {fields.map((field) => {
+                    const value = templateResponses[field.id] ?? "";
+                    const words = wordCount(value);
+                    const ready = words >= field.minWords;
+                    return (
+                      <label className={ready ? "template-field ready" : "template-field"} key={field.id}>
+                        <span>
+                          <strong>{field.label}</strong>
+                          <em>
+                            {words}/{field.minWords} words
+                          </em>
+                        </span>
+                        <p>{field.guide}</p>
+                        <textarea
+                          autoComplete="off"
+                          onBeforeInput={checkBeforeInput}
+                          onChange={(event) => changeTemplateResponse(field.id, event.target.value)}
+                          onDrop={blockTemplateDrop}
+                          onKeyDown={countTemplateKey}
+                          onPaste={blockTemplatePaste}
+                          placeholder="Type your response here. Paste and drag-drop are blocked."
+                          spellCheck={true}
+                          value={value}
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </section>
+
         <section className="summary-section" id="summary">
           <div className="section-title">
             <div>
@@ -1207,6 +1551,10 @@ export default function Home() {
 function money(value: number) {
   const sign = value < 0 ? "-" : "";
   return `${sign}$${Math.abs(value).toFixed(2)}`;
+}
+
+function wordCount(value: string) {
+  return value.trim().split(/\s+/).filter(Boolean).length;
 }
 
 function statusClass(status: Status) {

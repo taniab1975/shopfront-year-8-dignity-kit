@@ -46,6 +46,13 @@ test("server-renders the Human Dignity Kit builder app", async () => {
   assert.match(html, /3 - Secure/);
   assert.match(html, /0 - Not demonstrated/);
   assert.match(html, /Clue 1/);
+  assert.match(html, /Online guided template/);
+  assert.match(html, /Student workspace with group and individual evidence/);
+  assert.match(html, /Group component/);
+  assert.match(html, /Individual component/);
+  assert.match(html, /AI copy-paste guard/);
+  assert.match(html, /Typed-only response fields/);
+  assert.match(html, /Paste and drag-drop are blocked/);
   assert.match(html, /Generated proposal/);
   assert.match(html, /MA-CN-001/);
   assert.match(html, /HS-EB-001/);
