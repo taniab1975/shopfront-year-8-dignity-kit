@@ -42,6 +42,16 @@ type CurriculumRow = {
   status: Status;
 };
 
+type AssessmentCriterion = {
+  token: string;
+  subject: string;
+  focus: string;
+  secure: string;
+  developing: string;
+  emerging: string;
+  missing: string;
+};
+
 const STORAGE_KEY = "shopfront-dignity-kit-builder-v1";
 const BUDGET = 100;
 
@@ -513,6 +523,80 @@ const checklist = [
   },
 ];
 
+const assessmentDeliverables = [
+  "Itemised kit and $100 budget with quantity, unit price, item total, remaining balance and category percentages.",
+  "Decision matrix comparing at least three kit options, including benefit, cost and opportunity cost.",
+  "Product test with question, prediction, variables, method, risk, results table, graph and conclusion.",
+  "Approximately 200-word dignity statement using Imago Dei plus Common Good or Stewardship.",
+  "Final one-page Shopfront proposal or short pitch that recommends a kit and justifies it with evidence.",
+];
+
+const assessmentCriteria: AssessmentCriterion[] = [
+  {
+    token: "VALUE",
+    subject: "Mathematics",
+    focus: "Accuracy of budget calculations and mathematical modelling.",
+    secure: "All money, percentage, estimation and constraint calculations are accurate and clearly interpreted.",
+    developing: "Most calculations are correct, with minor errors or limited explanation of assumptions.",
+    emerging: "Some calculations are attempted, but errors weaken the budget recommendation.",
+    missing: "Budget evidence is missing, inaccurate or not connected to the $100 constraint.",
+  },
+  {
+    token: "CHOICE",
+    subject: "HASS Economics",
+    focus: "Consumer choice, scarcity, budgeting and opportunity cost.",
+    secure: "Compares realistic options and explains trade-offs, opportunity cost and value for the recipient.",
+    developing: "Compares options with some explanation of cost, benefit or trade-off.",
+    emerging: "Lists choices but gives limited economic reasoning.",
+    missing: "No clear comparison or economic justification is provided.",
+  },
+  {
+    token: "EVIDENCE",
+    subject: "Science Inquiry",
+    focus: "Testing a product claim before recommending an item.",
+    secure: "Investigation is fair, reproducible and uses data to justify a purchase recommendation.",
+    developing: "Investigation has a useful question and data, but controls, risk or conclusion need strengthening.",
+    emerging: "Investigation is attempted but the evidence is incomplete or weakly linked to the decision.",
+    missing: "No product test or evidence-based scientific recommendation is provided.",
+  },
+  {
+    token: "VOICE",
+    subject: "English",
+    focus: "Persuasive proposal for a real Shopfront audience.",
+    secure: "Proposal is well structured, respectful, audience-aware and substantiates claims with evidence.",
+    developing: "Proposal is clear and mostly persuasive, with some evidence or cohesion still uneven.",
+    emerging: "Proposal communicates an idea but lacks structure, audience control or evidence.",
+    missing: "No coherent proposal or persuasive justification is provided.",
+  },
+  {
+    token: "DIGNITY",
+    subject: "Religion",
+    focus: "Human dignity, Imago Dei, Common Good and Stewardship.",
+    secure: "Explains how the kit honours inherent dignity and uses Catholic concepts accurately.",
+    developing: "Connects the kit to dignity and Catholic concepts, but explanation is general.",
+    emerging: "Mentions dignity or faith concepts without clear application to the kit decision.",
+    missing: "No meaningful dignity or Religious Education connection is provided.",
+  },
+];
+
+const clueLevels = [
+  {
+    name: "Clue 1",
+    purpose: "Metacognitive prompt",
+    example: "What evidence would convince Shopfront that this item belongs in the kit?",
+  },
+  {
+    name: "Clue 2",
+    purpose: "Curriculum memory",
+    example: "Which lens is this: VALUE, CHOICE, EVIDENCE, VOICE or DIGNITY?",
+  },
+  {
+    name: "Clue 3",
+    purpose: "Scaffold",
+    example: "Use this sentence starter, calculation template or decision-matrix row.",
+  },
+];
+
 const defaultQuantities = starterItems.reduce<Record<string, number>>((acc, item) => {
   acc[item.id] = item.defaultQty;
   return acc;
@@ -650,7 +734,9 @@ export default function Home() {
       `Dignity rationale: ${notes.dignity}`,
       `Pitch claim: ${notes.pitch}`,
       "",
-      "Assessment evidence: itemised budget, decision matrix, product test, dignity statement and final Shopfront proposal.",
+      "Assessment task: Teams recommend a dignity kit for Shopfront using a $100 budget constraint.",
+      `Required submissions: ${assessmentDeliverables.join(" ")}`,
+      "Marking scale: 3 Secure, 2 Developing, 1 Emerging, 0 Not demonstrated across VALUE, CHOICE, EVIDENCE, VOICE and DIGNITY.",
     ].join("\n");
   }, [categoryTotals, notes, remaining, selectedItems, selectedStrategy, total]);
 
@@ -1004,10 +1090,42 @@ export default function Home() {
         <section className="assessment-section" id="assessment">
           <div className="section-title">
             <div>
-              <p className="eyebrow">Assessment pack</p>
-              <h2>One portfolio with subject-owned evidence</h2>
+              <p className="eyebrow">Actual assessment</p>
+              <h2>Student task, required evidence and marking criteria</h2>
             </div>
             <span className="health-chip">{checkedCount} complete</span>
+          </div>
+
+          <div className="assessment-brief">
+            <article>
+              <p className="eyebrow">Student scenario</p>
+              <h3>Shopfront has $100 to create one dignity kit.</h3>
+              <p>
+                Your team must decide what should go in the kit, stay within budget, justify your choices
+                with evidence and explain how the solution supports the dignity of a person experiencing
+                homelessness or hardship.
+              </p>
+            </article>
+            <article>
+              <p className="eyebrow">Final recommendation</p>
+              <h3>Recommend one kit for Shopfront to adopt.</h3>
+              <p>
+                Your proposal must show the numbers, the choices you rejected, one tested product claim,
+                respectful persuasive writing and a clear dignity rationale.
+              </p>
+            </article>
+          </div>
+
+          <div className="deliverables-panel">
+            <div>
+              <p className="eyebrow">Required submissions</p>
+              <h3>What students hand in</h3>
+            </div>
+            <ol className="deliverables-list">
+              {assessmentDeliverables.map((deliverable) => (
+                <li key={deliverable}>{deliverable}</li>
+              ))}
+            </ol>
           </div>
 
           <div className="checklist-grid">
@@ -1028,23 +1146,44 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="rubric-grid">
-            <article>
-              <h3>3 - Secure</h3>
-              <p>Accurate, justified and clearly connected to the subject curriculum.</p>
-            </article>
-            <article>
-              <h3>2 - Developing</h3>
-              <p>Mostly accurate, with some explanation or evidence still incomplete.</p>
-            </article>
-            <article>
-              <h3>1 - Emerging</h3>
-              <p>Partial evidence is present, but the curriculum concept is weakly applied.</p>
-            </article>
-            <article>
-              <h3>0 - Not demonstrated</h3>
-              <p>The required evidence is missing or not connected to the task.</p>
-            </article>
+          <div className="assessment-table" role="region" aria-label="Assessment rubric" tabIndex={0}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Lens</th>
+                  <th>Criteria</th>
+                  <th>3 - Secure</th>
+                  <th>2 - Developing</th>
+                  <th>1 - Emerging</th>
+                  <th>0 - Not demonstrated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assessmentCriteria.map((criterion) => (
+                  <tr key={criterion.token}>
+                    <td>
+                      <strong>{criterion.token}</strong>
+                      <span>{criterion.subject}</span>
+                    </td>
+                    <td>{criterion.focus}</td>
+                    <td>{criterion.secure}</td>
+                    <td>{criterion.developing}</td>
+                    <td>{criterion.emerging}</td>
+                    <td>{criterion.missing}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="clue-grid" aria-label="Classroom clue system">
+            {clueLevels.map((clue) => (
+              <article key={clue.name}>
+                <span>{clue.name}</span>
+                <h3>{clue.purpose}</h3>
+                <p>{clue.example}</p>
+              </article>
+            ))}
           </div>
         </section>
 

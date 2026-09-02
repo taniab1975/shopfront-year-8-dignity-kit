@@ -305,7 +305,9 @@ h4 {
 .allocation-list span,
 .notes-grid label,
 .check-row span,
-.rubric-grid p,
+.assessment-brief p,
+.deliverables-list,
+.clue-grid p,
 .lens-card li,
 .summary-section pre {
   color: var(--muted);
@@ -638,7 +640,8 @@ code {
   min-width: 220px;
 }
 
-.matrix-table {
+.matrix-table,
+.assessment-table {
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -710,6 +713,56 @@ td span {
   background: #e4e2e6;
 }
 
+.assessment-brief {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.assessment-brief article,
+.deliverables-panel,
+.clue-grid article {
+  border: 1px solid #e4dbcf;
+  border-radius: 8px;
+  background: white;
+}
+
+.assessment-brief article {
+  min-height: 178px;
+  padding: 18px;
+}
+
+.assessment-brief h3,
+.deliverables-panel h3,
+.clue-grid h3 {
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.assessment-brief p {
+  margin-top: 10px;
+}
+
+.deliverables-panel {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 18px;
+}
+
+.deliverables-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.deliverables-list li {
+  padding-left: 4px;
+}
+
 .checklist-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -737,19 +790,37 @@ td span {
   font-size: 0.9rem;
 }
 
-.rubric-grid {
+.assessment-table {
+  margin-top: 12px;
+}
+
+.assessment-table table {
+  min-width: 1180px;
+}
+
+.clue-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 12px;
 }
 
-.rubric-grid article {
-  min-height: 128px;
-  border: 1px solid #e4dbcf;
-  border-radius: 8px;
+.clue-grid article {
+  min-height: 138px;
   padding: 16px;
-  background: white;
+}
+
+.clue-grid article span {
+  display: inline-flex;
+  margin-bottom: 8px;
+  color: var(--clay);
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.clue-grid p {
+  margin-top: 8px;
 }
 
 .summary-section pre {
@@ -777,7 +848,7 @@ td span {
   }
 
   .checklist-grid,
-  .rubric-grid {
+  .clue-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -813,8 +884,10 @@ td span {
   .strategy-grid,
   .notes-grid,
   .lens-columns,
+  .assessment-brief,
+  .deliverables-panel,
   .checklist-grid,
-  .rubric-grid {
+  .clue-grid {
     grid-template-columns: 1fr;
   }
 
@@ -874,5 +947,17 @@ td span {
 
   .budget-panel {
     position: static;
+  }
+
+  .assessment-brief,
+  .deliverables-panel,
+  .clue-grid {
+    display: block;
+  }
+
+  .assessment-brief article,
+  .deliverables-panel,
+  .clue-grid article {
+    margin-bottom: 10px;
   }
 }
