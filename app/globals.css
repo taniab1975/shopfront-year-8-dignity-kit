@@ -976,6 +976,20 @@ code {
   min-width: 220px;
 }
 
+.filter-result-chip {
+  align-self: end;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffaf0;
+  color: #263132;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
 .matrix-table,
 .assessment-table {
   overflow: auto;
