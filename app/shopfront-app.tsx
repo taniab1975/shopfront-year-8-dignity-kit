@@ -1144,7 +1144,8 @@ export default function ShopfrontApp() {
   const storageReady = useRef(false);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
+    const storage = getBrowserStorage();
+    const saved = storage?.getItem(STORAGE_KEY);
     if (!saved) {
       storageReady.current = true;
       return;
@@ -1171,7 +1172,7 @@ export default function ShopfrontApp() {
         timelineChecks?: Record<string, boolean>;
       };
 
-      window.queueMicrotask(() => {
+      deferBrowserTask(() => {
         setQuantities({ ...defaultQuantities, ...(parsed.quantities ?? {}) });
         setCustomItems(parsed.customItems ?? []);
         setSelectedStrategyId(parsed.selectedStrategyId ?? "balanced");
@@ -1192,21 +1193,24 @@ export default function ShopfrontApp() {
         storageReady.current = true;
       });
     } catch {
-      window.localStorage.removeItem(STORAGE_KEY);
+      storage?.removeItem(STORAGE_KEY);
       storageReady.current = true;
     }
   }, []);
 
   useEffect(() => {
     const updateClock = () => setClockNow(Date.now());
-    window.queueMicrotask(updateClock);
+    deferBrowserTask(updateClock);
     const timerId = window.setInterval(updateClock, 60000);
     return () => window.clearInterval(timerId);
   }, []);
 
   useEffect(() => {
     if (!storageReady.current) return;
-    window.localStorage.setItem(
+    const storage = getBrowserStorage();
+    if (!storage) return;
+
+    storage.setItem(
       STORAGE_KEY,
       JSON.stringify({
         quantities,
@@ -1350,6 +1354,14 @@ export default function ShopfrontApp() {
     }
   }
 
+  function changeActiveLens(nextLensId: string) {
+    setActiveLensId(nextLensId);
+    const matchingLens = lenses.find((lens) => lens.id === nextLensId);
+    if (matchingLens) {
+      setSubjectFilter(matchingLens.subject);
+    }
+  }
+
   const summaryText = useMemo(() => {
     const itemList =
       selectedItems.length > 0
@@ -1454,12 +1466,16 @@ export default function ShopfrontApp() {
     setDecisionEvidence(defaultDecisionEvidence);
     setEngagementSignalsState(defaultEngagementSignals);
     setTimelineChecks({});
+    setSubjectFilter("All");
+    setStatusFilter("Directly assessed");
     setCopied(false);
-    window.localStorage.removeItem(STORAGE_KEY);
+    getBrowserStorage()?.removeItem(STORAGE_KEY);
   }
 
   async function copySummary() {
-    await navigator.clipboard.writeText(summaryText);
+    const copiedSummary = await copyTextToClipboard(summaryText);
+    if (!copiedSummary) return;
+
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
   }
@@ -2153,7 +2169,7 @@ export default function ShopfrontApp() {
                   aria-selected={selectedLens.id === lens.id}
                   className={selectedLens.id === lens.id ? "active" : ""}
                   key={lens.id}
-                  onClick={() => setActiveLensId(lens.id)}
+                  onClick={() => changeActiveLens(lens.id)}
                   role="tab"
                   type="button"
                 >
@@ -2515,4 +2531,57 @@ function statusClass(status: Status) {
   if (status === "Directly assessed") return "direct";
   if (status === "Applied or practised") return "practice";
   return "context";
+}
+
+function getBrowserStorage() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    return window.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function deferBrowserTask(callback: () => void) {
+  if (typeof window !== "undefined" && typeof window.queueMicrotask === "function") {
+    window.queueMicrotask(callback);
+    return;
+  }
+
+  callback();
+}
+
+async function copyTextToClipboard(text: string) {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall through to the selection-based copy path.
+    }
+  }
+
+  if (typeof document === "undefined") return false;
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+
+  const selection = document.getSelection();
+  const selectedRange = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textarea);
+
+  if (selectedRange && selection) {
+    selection.removeAllRanges();
+    selection.addRange(selectedRange);
+  }
+
+  return copied;
 }
